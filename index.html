@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AO Novels - 去中心化小说平台</title>
+    <title>AO Novel Reader</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
 </head>
@@ -16,11 +16,11 @@
             <h1 class="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-600">AO Novels</h1>
         </div>
         <div class="flex gap-4">
-            <button onclick="showView('home')" class="hover:text-blue-600 font-medium">图书馆</button>
-            <button onclick="showView('create')" class="hover:text-blue-600 font-medium">创作小说</button>
+            <button onclick="showView('home')" class="hover:text-blue-600 font-medium">Library</button>
+            <button onclick="showView('create')" class="hover:text-blue-600 font-medium">Author Studio</button>
         </div>
         <button id="connectBtn" onclick="connectWallet()" class="bg-slate-900 text-white px-4 py-2 rounded-lg hover:bg-slate-800 transition text-sm font-medium">
-            连接钱包
+            Connect Wallet
         </button>
     </nav>
 
@@ -30,72 +30,80 @@
         <!-- View: Home (List Novels) -->
         <div id="homeView" class="space-y-6">
             <div class="flex justify-between items-center">
-                <h2 class="text-2xl font-bold">所有小说</h2>
-                <button onclick="loadNovels()" class="text-sm text-blue-600 hover:underline">刷新</button>
+                <h2 class="text-2xl font-bold">Latest Novels</h2>
+                <button onclick="loadNovels()" class="text-sm text-blue-600 hover:underline">Refresh</button>
             </div>
             <div id="novelList" class="grid gap-4 md:grid-cols-2">
-                <div class="p-8 text-center text-slate-400 bg-white rounded-xl border border-slate-200">加载中...</div>
+                <!-- Novels injected here -->
+                <div class="p-8 text-center text-slate-400 bg-white rounded-xl border border-slate-200">Loading novels...</div>
             </div>
         </div>
 
         <!-- View: Create Novel -->
         <div id="createView" class="hidden max-w-xl mx-auto bg-white p-8 rounded-xl shadow-sm border border-slate-200">
-            <h2 class="text-2xl font-bold mb-6">创作新小说</h2>
+            <h2 class="text-2xl font-bold mb-6">Create New Novel</h2>
             <form id="createForm" class="space-y-4">
                 <div>
-                    <label class="block text-sm font-medium mb-1">标题</label>
+                    <label class="block text-sm font-medium mb-1">Title</label>
                     <input type="text" id="newTitle" class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" required>
                 </div>
                 <div>
-                    <label class="block text-sm font-medium mb-1">简介（可选）</label>
-                    <textarea id="newDesc" class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" rows="3"></textarea>
+                    <label class="block text-sm font-medium mb-1">Description</label>
+                    <textarea id="newDesc" class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" rows="3" required></textarea>
                 </div>
-                <button type="submit" class="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 font-medium">创建小说</button>
+                <button type="submit" class="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 font-medium">Create Novel</button>
             </form>
         </div>
 
-        <!-- View: Novel Details -->
+        <!-- View: Novel Details & Chapters -->
         <div id="novelDetailView" class="hidden space-y-6">
             <button onclick="showView('home')" class="text-slate-500 hover:text-slate-800 flex items-center gap-1 text-sm">
-                <i data-lucide="arrow-left" class="w-4 h-4"></i> 返回图书馆
+                <i data-lucide="arrow-left" class="w-4 h-4"></i> Back to Library
             </button>
-            <div id="novelHeader" class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm"></div>
+            
+            <div id="novelHeader" class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+                <!-- Header injected here -->
+            </div>
 
             <div id="authorControls" class="hidden bg-indigo-50 p-6 rounded-xl border border-indigo-100">
-                <h3 class="font-bold text-indigo-900 mb-4">作者工具：发布新章节</h3>
+                <h3 class="font-bold text-indigo-900 mb-4">Author Controls: Add Chapter</h3>
                 <form id="addChapterForm" class="space-y-3">
                     <input type="hidden" id="targetNovelId">
-                    <input type="text" id="chapTitle" placeholder="章节标题" class="w-full p-2 border rounded bg-white" required>
-                    <div class="flex items-center gap-2">
-                        <label class="flex items-center gap-2 text-sm">
-                            <input type="checkbox" id="chapPaid"> 付费？
-                        </label>
-                        <input type="number" id="chapPrice" placeholder="价格 (0 = 自动)" class="p-2 border rounded bg-white w-full text-sm">
+                    <div class="grid grid-cols-2 gap-4">
+                        <input type="text" id="chapTitle" placeholder="Chapter Title" class="p-2 border rounded bg-white" required>
+                        <div class="flex items-center gap-2">
+                            <label class="flex items-center gap-2 text-sm">
+                                <input type="checkbox" id="chapPaid"> Paid?
+                            </label>
+                            <input type="number" id="chapPrice" placeholder="Price (0 = auto)" class="p-2 border rounded bg-white w-full text-sm">
+                        </div>
                     </div>
-                    <textarea id="chapContent" placeholder="章节内容..." class="w-full p-2 border rounded bg-white h-40" required></textarea>
-                    <button type="submit" class="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700 text-sm">发布章节</button>
+                    <textarea id="chapContent" placeholder="Chapter Content..." class="w-full p-2 border rounded bg-white h-32" required></textarea>
+                    <button type="submit" class="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700 text-sm">Publish Chapter</button>
                 </form>
             </div>
 
             <div class="space-y-2">
-                <h3 class="font-bold text-lg">章节列表</h3>
-                <div id="chapterList" class="space-y-2"></div>
+                <h3 class="font-bold text-lg">Chapters</h3>
+                <div id="chapterList" class="space-y-2">
+                    <!-- Chapters injected here -->
+                </div>
             </div>
         </div>
 
         <!-- View: Reader -->
         <div id="readerView" class="hidden">
             <button onclick="backToNovel()" class="mb-4 text-slate-500 hover:text-slate-800 flex items-center gap-1 text-sm">
-                <i data-lucide="arrow-left" class="w-4 h-4"></i> 返回小说
+                <i data-lucide="arrow-left" class="w-4 h-4"></i> Back to Novel
             </button>
             <div class="bg-white p-8 md:p-12 rounded-xl shadow-sm border border-slate-200 max-w-3xl mx-auto">
                 <h1 id="readTitle" class="text-3xl font-serif font-bold mb-6 text-slate-900"></h1>
                 <div id="readContent" class="prose prose-slate max-w-none font-serif leading-relaxed text-lg"></div>
                 
                 <div id="editControls" class="hidden mt-12 pt-8 border-t border-slate-100">
-                    <h4 class="font-bold text-sm text-slate-500 mb-2">作者编辑</h4>
-                    <textarea id="editContent" class="w-full p-4 border rounded-lg bg-slate-50 text-sm font-mono" rows="15"></textarea>
-                    <button onclick="saveEdit()" class="mt-2 bg-slate-800 text-white px-4 py-2 rounded text-sm">保存新版本</button>
+                    <h4 class="font-bold text-sm text-slate-500 mb-2">AUTHOR: EDIT / FIX TYPOS</h4>
+                    <textarea id="editContent" class="w-full p-4 border rounded-lg bg-slate-50 text-sm font-mono" rows="10"></textarea>
+                    <button onclick="saveEdit()" class="mt-2 bg-slate-800 text-white px-4 py-2 rounded text-sm">Save New Version</button>
                 </div>
             </div>
         </div>
@@ -104,103 +112,267 @@
 
     <script type="module">
         import { createDataItemSigner, message, dryrun } from "https://unpkg.com/@permaweb/aoconnect@0.0.52";
-
+        
         const PROCESS_ID = "51tMVLxBazWMBT9NhfaCuDP3HjQfZOggIcT7l9mRrbw";
-
         let walletAddress = null;
-        let signer = null;
         let currentNovelId = null;
         let currentChapterIndex = null;
-        let currentNovelAuthor = null;
-        let walletReady = false; // Wander 扩展是否已加载
 
+        // Icons
         lucide.createIcons();
 
-        // 更新钱包显示
-        function updateWalletDisplay(addr) {
-            walletAddress = addr;
-            document.getElementById('connectBtn').textContent = addr.slice(0, 6) + '...' + addr.slice(-4);
-            document.getElementById('connectBtn').classList.add('text-green-600');
-            document.getElementById('connectBtn').classList.remove('bg-slate-900', 'hover:bg-slate-800');
-            signer = createDataItemSigner(window.arweaveWallet);
-            console.log("[成功] 钱包已连接:", addr);
-        }
-
-        // 连接钱包函数
-        async function connectWallet() {
-            if (!walletReady) {
-                alert("Wander 扩展尚未加载完成，请稍等或刷新页面。");
-                return;
+        // --- Wallet Logic ---
+        const connectBtn = document.getElementById('connectBtn');
+        connectBtn.addEventListener('click', async () => {
+            if (window.arweaveWallet) {
+                await window.arweaveWallet.connect(['ACCESS_ADDRESS', 'SIGN_TRANSACTION']);
+                walletAddress = await window.arweaveWallet.getActiveAddress();
+                connectBtn.textContent = walletAddress.slice(0, 6) + '...' + walletAddress.slice(-4);
+                loadNovels();
+            } else {
+                alert("Please install ArConnect");
             }
-            if (!window.arweaveWallet) {
-                alert("未检测到 Wander 钱包扩展！请确保已安装最新版 Wander 并登录。下载地址：https://www.wander.app/download");
-                return;
-            }
-
-            try {
-                await window.arweaveWallet.connect(['ACCESS_ADDRESS', 'SIGN_TRANSACTION', 'SIGNATURE']);
-                const addr = await window.arweaveWallet.getActiveAddress();
-                updateWalletDisplay(addr);
-            } catch (err) {
-                console.error(err);
-                alert("连接失败，请在 Wander 扩展中批准权限。错误：" + err.message);
-            }
-        }
-
-        // Wander 官方推荐：监听 arweaveWalletLoaded 事件
-        window.addEventListener('arweaveWalletLoaded', async () => {
-            console.log("[事件] Wander 扩展已加载");
-            walletReady = true;
-            // 尝试自动连接（如果已授权）
-            try {
-                const addr = await window.arweaveWallet.getActiveAddress();
-                if (addr) updateWalletDisplay(addr);
-            } catch (e) {}
         });
 
-        // 视图切换
-        window.showView = (view) => {
-            ['homeView', 'createView', 'novelDetailView', 'readerView'].forEach(v => {
-                document.getElementById(v).classList.add('hidden');
+        // --- Navigation ---
+        window.showView = (viewId) => {
+            ['homeView', 'createView', 'novelDetailView', 'readerView'].forEach(id => {
+                document.getElementById(id).classList.add('hidden');
             });
-            document.getElementById(view + 'View').classList.remove('hidden');
-            if (view === 'home') loadNovels();
+            document.getElementById(viewId + (viewId.endsWith('View') ? '' : 'View')).classList.remove('hidden');
+            if(viewId === 'home') loadNovels();
         };
 
-        window.backToNovel = () => loadNovelDetails(currentNovelId);
-
-        // AO 操作
-        const aoDryrun = async (tags, owner = walletAddress) => dryrun({ process: PROCESS_ID, tags, owner });
-        const aoMessage = async (tags, data = null) => {
-            if (!signer) throw new Error("请先连接钱包");
-            return message({ process: PROCESS_ID, signer, tags, data });
+        window.backToNovel = () => {
+            if(currentNovelId) loadNovelDetails(currentNovelId);
         };
 
-        // 加载小说列表
+        // --- Actions ---
+
+        // 1. List Novels
         window.loadNovels = async () => {
-            document.getElementById('novelList').innerHTML = '<div class="p-8 text-center text-slate-400">加载中...</div>';
             try {
-                const res = await aoDryrun([{ name: 'Action', value: 'List-Novels' }]);
+                const res = await dryrun({
+                    process: PROCESS_ID,
+                    tags: [{ name: 'Action', value: 'List-Novels' }]
+                });
                 const novels = JSON.parse(res.Messages[0].Data);
-                const html = novels.length === 0 
-                    ? '<div class="p-8 text-center text-slate-400 col-span-2">暂无小说，快去创作吧！</div>'
-                    : novels.map(n => `
-                        <div onclick="loadNovelDetails('${n.id}')" class="bg-white p-6 rounded-xl border border-slate-200 hover:shadow-md cursor-pointer">
-                            <h3 class="font-bold text-lg">${n.title}</h3>
-                            <p class="text-sm text-slate-500 mt-1">作者: ${n.author.slice(0,10)}...</p>
-                            <div class="mt-4 text-xs text-slate-400">${n.chapterCount} 章</div>
+                const container = document.getElementById('novelList');
+                container.innerHTML = novels.map(n => `
+                    <div onclick="loadNovelDetails('${n.id}')" class="bg-white p-6 rounded-xl border border-slate-200 hover:shadow-md transition cursor-pointer group">
+                        <h3 class="font-bold text-lg group-hover:text-blue-600">${n.title}</h3>
+                        <p class="text-sm text-slate-500 mt-1">By ${n.author.slice(0,6)}...</p>
+                        <div class="mt-4 flex items-center gap-2 text-xs font-medium text-slate-400">
+                            <span class="bg-slate-100 px-2 py-1 rounded">${n.chapterCount} Chapters</span>
                         </div>
-                    `).join('');
-                document.getElementById('novelList').innerHTML = html;
+                    </div>
+                `).join('');
             } catch (e) {
-                document.getElementById('novelList').innerHTML = '<div class="p-8 text-center text-red-500">加载失败</div>';
+                console.error(e);
             }
         };
 
-        // 创建小说等其他函数保持不变（略，完整代码已包含所有功能）
+        // 2. Create Novel
+        document.getElementById('createForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            if(!walletAddress) return alert("Connect Wallet first");
+            
+            const title = document.getElementById('newTitle').value;
+            const desc = document.getElementById('newDesc').value;
+            
+            connectBtn.textContent = "Creating...";
+            
+            try {
+                await message({
+                    process: PROCESS_ID,
+                    signer: createDataItemSigner(window.arweaveWallet),
+                    tags: [
+                        { name: 'Action', value: 'Create-Novel' },
+                        { name: 'Title', value: title },
+                        { name: 'Description', value: desc }
+                    ]
+                });
+                alert("Novel Created!");
+                document.getElementById('createForm').reset();
+                showView('home');
+            } catch(e) {
+                alert("Error: " + e.message);
+            } finally {
+                connectBtn.textContent = walletAddress.slice(0,6)+"...";
+            }
+        });
 
-        // 初始加载
-        loadNovels();
+        // 3. Load Novel Details
+        window.loadNovelDetails = async (id) => {
+            currentNovelId = id;
+            showView('novelDetailView');
+            
+            const res = await dryrun({
+                process: PROCESS_ID,
+                tags: [
+                    { name: 'Action', value: 'Get-Novel' },
+                    { name: 'NovelId', value: id }
+                ]
+            });
+            
+            const novel = JSON.parse(res.Messages[0].Data);
+            
+            // Render Header
+            document.getElementById('novelHeader').innerHTML = `
+                <h1 class="text-3xl font-bold mb-2">${novel.title}</h1>
+                <p class="text-slate-600 mb-4">${novel.description}</p>
+                <div class="flex items-center gap-4 text-sm text-slate-500">
+                    <span>Author: ${novel.author}</span>
+                    <span class="bg-blue-50 text-blue-700 px-2 py-0.5 rounded border border-blue-100">Mode: ${novel.pricingType}</span>
+                </div>
+            `;
+
+            // Show Author Controls if owner
+            const isAuthor = walletAddress === novel.author;
+            const authControls = document.getElementById('authorControls');
+            if(isAuthor) {
+                authControls.classList.remove('hidden');
+                document.getElementById('targetNovelId').value = id;
+            } else {
+                authControls.classList.add('hidden');
+            }
+
+            // Render Chapters
+            const list = document.getElementById('chapterList');
+            list.innerHTML = novel.chapters.map(c => `
+                <div class="flex items-center justify-between p-4 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition">
+                    <div>
+                        <h4 class="font-medium">Chapter ${c.index}: ${c.title}</h4>
+                        <p class="text-xs text-slate-400 mt-1">${c.wordCount} bytes</p>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        ${c.isPaid 
+                            ? `<span class="text-xs font-bold text-amber-600 bg-amber-50 px-2 py-1 rounded border border-amber-100">PAID: ${c.price}</span>` 
+                            : `<span class="text-xs font-bold text-green-600 bg-green-50 px-2 py-1 rounded border border-green-100">FREE</span>`
+                        }
+                        <button onclick="readChapter('${id}', ${c.index})" class="bg-slate-900 text-white text-sm px-3 py-1.5 rounded hover:bg-slate-700">
+                            Read
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        };
+
+        // 4. Add Chapter
+        document.getElementById('addChapterForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const novelId = document.getElementById('targetNovelId').value;
+            const title = document.getElementById('chapTitle').value;
+            const content = document.getElementById('chapContent').value;
+            const isPaid = document.getElementById('chapPaid').checked;
+            const price = document.getElementById('chapPrice').value;
+
+            try {
+                await message({
+                    process: PROCESS_ID,
+                    signer: createDataItemSigner(window.arweaveWallet),
+                    tags: [
+                        { name: 'Action', value: 'Add-Chapter' },
+                        { name: 'NovelId', value: novelId },
+                        { name: 'Title', value: title },
+                        { name: 'IsPaid', value: isPaid ? 'true' : 'false' },
+                        { name: 'Price', value: price || '0' }
+                    ],
+                    data: content
+                });
+                alert("Chapter Published!");
+                document.getElementById('addChapterForm').reset();
+                loadNovelDetails(novelId);
+            } catch(e) {
+                alert("Error publishing: " + e.message);
+            }
+        });
+
+        // 5. Read Chapter (Handle Payment/Lock)
+        window.readChapter = async (novelId, chapterIndex) => {
+            currentChapterIndex = chapterIndex;
+            
+            // Try to fetch content
+            const res = await dryrun({
+                process: PROCESS_ID,
+                owner: walletAddress, // Important for access control check in Lua
+                tags: [
+                    { name: 'Action', value: 'Read-Chapter' },
+                    { name: 'NovelId', value: novelId },
+                    { name: 'ChapterIndex', value: String(chapterIndex) }
+                ]
+            });
+
+            const data = JSON.parse(res.Messages[0].Data);
+
+            if (data.error === "LOCKED") {
+                if(confirm(`This chapter is locked. Price: ${data.price} tokens. Buy now?`)) {
+                    await buyChapter(novelId, chapterIndex);
+                }
+            } else {
+                // Success
+                showView('readerView');
+                document.getElementById('readTitle').textContent = data.title;
+                document.getElementById('readContent').innerText = data.content; // Using innerText to preserve newlines
+                
+                // Edit controls for author
+                const editArea = document.getElementById('editControls');
+                // Simple check: if dryrun returned content, we are either author or paid. 
+                // We need to check if we are author to show edit.
+                // Ideally we pass 'isAuthor' flag from backend, but for now we can check wallet again against novel author if we had it stored.
+                // A simpler way: Just try to show it if we think we are author.
+                // Let's re-fetch novel details to be sure or store it in a global var.
+                // For this demo, we will just check if the edit button should be visible based on previous view state.
+                const authControls = document.getElementById('authorControls');
+                if (!authControls.classList.contains('hidden')) {
+                    editArea.classList.remove('hidden');
+                    document.getElementById('editContent').value = data.content;
+                } else {
+                    editArea.classList.add('hidden');
+                }
+            }
+        };
+
+        // 6. Buy Chapter
+        async function buyChapter(novelId, chapterIndex) {
+            try {
+                await message({
+                    process: PROCESS_ID,
+                    signer: createDataItemSigner(window.arweaveWallet),
+                    tags: [
+                        { name: 'Action', value: 'Buy-Chapter' },
+                        { name: 'NovelId', value: novelId },
+                        { name: 'ChapterIndex', value: String(chapterIndex) }
+                    ]
+                });
+                alert("Purchased! Opening chapter...");
+                readChapter(novelId, chapterIndex);
+            } catch(e) {
+                alert("Purchase failed: " + e.message);
+            }
+        }
+
+        // 7. Update Chapter (Fix Typos)
+        window.saveEdit = async () => {
+            const newContent = document.getElementById('editContent').value;
+            try {
+                await message({
+                    process: PROCESS_ID,
+                    signer: createDataItemSigner(window.arweaveWallet),
+                    tags: [
+                        { name: 'Action', value: 'Update-Chapter' },
+                        { name: 'NovelId', value: currentNovelId },
+                        { name: 'ChapterIndex', value: String(currentChapterIndex) }
+                    ],
+                    data: newContent
+                });
+                alert("Chapter Updated!");
+                document.getElementById('readContent').innerText = newContent;
+            } catch(e) {
+                alert("Update failed: " + e.message);
+            }
+        };
+
     </script>
 </body>
 </html>
