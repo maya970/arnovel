@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>创作小说 - AO Novels</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body class="bg-slate-50 min-h-screen">
+    <nav class="bg-white border-b px-6 py-4 flex justify-between items-center">
+        <a href="index.html" class="flex items-center gap-2">
+            <i data-lucide="book-open" class="text-blue-600"></i>
+            <h1 class="text-xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">AO Novels</h1>
+        </a>
+        <div class="flex gap-6 items-center">
+            <a href="index.html" class="font-medium hover:text-blue-600">图书馆</a>
+            <span class="wallet-address text-sm bg-slate-100 px-3 py-1 rounded">未连接</span>
+        </div>
+    </nav>
+
+    <main class="max-w-xl mx-auto mt-12 p-6">
+        <div class="bg-white rounded-xl shadow-sm border p-8">
+            <h2 class="text-2xl font-bold mb-6">创作新小说</h2>
+            <form id="createForm" class="space-y-5">
+                <div>
+                    <label class="block font-medium mb-1">标题</label>
+                    <input type="text" id="title" required class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none">
+                </div>
+                <div>
+                    <label class="block font-medium mb-1">简介（可选）</label>
+                    <textarea id="desc" rows="4" class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"></textarea>
+                </div>
+                <button type="submit" class="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 font-medium">
+                    创建小说
+                </button>
+            </form>
+        </div>
+    </main>
+
+    <script src="common.js"></script>
+    <script>
+        lucide.createIcons();
+        document.querySelector('.wallet-address').textContent = walletAddress ? walletAddress.slice(0,6)+'...'+walletAddress.slice(-4) : '未连接';
+
+        document.getElementById('createForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            if (!walletAddress) return alert("请先连接钱包");
+
+            const title = document.getElementById('title').value.trim();
+            const desc = document.getElementById('desc').value.trim();
+            if (!title) return alert("标题必填");
+
+            try {
+                await aoMessage([
+                    { name: 'Action', value: 'Create-Novel' },
+                    { name: 'Title', value: title },
+                    { name: 'Description', value: desc }
+                ]);
+                alert("小说创建成功！");
+                location.href = 'index.html';
+            } catch (err) {
+                alert("创建失败: " + err.message);
+            }
+        });
+    </script>
+</body>
+</html>
