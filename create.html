@@ -43,9 +43,12 @@
         lucide.createIcons();
         document.querySelector('.wallet-address').textContent = walletAddress ? walletAddress.slice(0,6)+'...'+walletAddress.slice(-4) : '未连接';
 
-        document.getElementById('createForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            if (!walletAddress) return alert("请先连接钱包");
+     document.getElementById('createForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    if (!walletAddress) {
+        console.log("No wallet connected, prompting...");
+        if (!await connectWallet()) return;
+    }
 
             const title = document.getElementById('title').value.trim();
             const desc = document.getElementById('desc').value.trim();
@@ -66,3 +69,5 @@
     </script>
 </body>
 </html>
+
+
