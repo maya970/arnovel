@@ -16,7 +16,7 @@
         <div class="flex gap-6 items-center">
             <a href="index.html" class="font-medium text-blue-600">图书馆</a>
             <a href="create.html" class="font-medium hover:text-blue-600">创作小说</a>
-            <button id="connectBtn" class="bg-slate-900 text-white px-4 py-2 rounded-lg hover:bg-slate-800 text-sm">
+            <button id="connectBtn" onclick="connectWallet()" class="bg-slate-900 text-white px-4 py-2 rounded-lg hover:bg-slate-800 text-sm">
                 连接钱包
             </button>
         </div>
@@ -28,18 +28,13 @@
             <button onclick="loadNovels()" class="text-blue-600 hover:underline">刷新</button>
         </div>
         <div id="novelList" class="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            <div class="p-12 text-center text-slate-400">加载中...</div>
+            <div class="col-span-full p-12 text-center text-slate-400">加载中...</div>
         </div>
     </main>
 
     <script src="common.js"></script>
     <script>
         lucide.createIcons();
-        document.getElementById('connectBtn').addEventListener('click', async () => {
-            if (await connectWallet()) {
-                document.getElementById('connectBtn').textContent = walletAddress.slice(0,6)+'...'+walletAddress.slice(-4);
-            }
-        });
 
         async function loadNovels() {
             document.getElementById('novelList').innerHTML = '<div class="col-span-full p-12 text-center text-slate-400">加载中...</div>';
@@ -60,7 +55,7 @@
                 `).join('');
             } catch (e) {
                 console.error(e);
-                document.getElementById('novelList').innerHTML = '<div class="col-span-full text-red-500 text-center">加载失败</div>';
+                document.getElementById('novelList').innerHTML = '<div class="col-span-full text-red-500 text-center">加载失败，请检查网络或进程状态</div>';
             }
         }
 
