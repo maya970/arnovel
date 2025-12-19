@@ -1,55 +1,51 @@
-// common.js
-import { createDataItemSigner, message, dryrun } from "https://unpkg.com/@permaweb/aoconnect@0.0.52";
-
-const PROCESS_ID = "51tMVLxBazWMBT9NhfaCuDP3HjQfZOggIcT7l9mRrbw";
-window.PROCESS_ID = PROCESS_ID;
-
-let walletAddress = null;
-window.walletAddress = null;
-let signer = null;
-
-// 更新显示
-function updateWalletDisplay(addr) {
-    walletAddress = addr;
-    window.walletAddress = addr;
-    document.querySelectorAll('.wallet-address, #connectBtn').forEach(el => {
-        el.textContent = addr.slice(0, 6) + '...' + addr.slice(-4);
-        el.classList.add('text-green-600');
-        el.classList.remove('hover:bg-slate-800');
-    });
-    console.log("Wallet connected:", addr);
-}
-
-// 连接函数（增强调试）
-window.connectWallet = async function() {
-    console.log("Attempting wallet connection...");
-    if (!window.arweaveWallet) {
-        console.error("Wander wallet extension not detected.");
-        alert("未检测到 Wander 钱包扩展。请安装最新版 Wander（https://www.wander.app/download），并确保启用和登录。安装后刷新页面重试。");
-        return false;
+<script type="module">
+    import { createDataItemSigner, message, dryrun } from "https://unpkg.com/@permaweb/aoconnect@0.0.52";
+    
+    const PROCESS_ID = "51tMVLxBazWMBT9NhfaCuDP3HjQfZOggIcT7l9mRrbw";
+    window.PROCESS_ID = PROCESS_ID;
+    
+    let walletAddress = null;
+    window.walletAddress = null;
+    let signer = null;
+    
+    function updateWalletDisplay(addr) {
+        walletAddress = addr;
+        window.walletAddress = addr;
+        document.querySelectorAll('.wallet-address, #connectBtn').forEach(el => {
+            el.textContent = addr.slice(0, 6) + '...' + addr.slice(-4);
+            el.classList.add('text-green-600');
+            el.classList.remove('hover:bg-slate-800', 'bg-slate-900');
+        });
     }
-
-    try {
-        console.log("Calling connect...");
-        await window.arweaveWallet.connect(['ACCESS_ADDRESS', 'SIGN_TRANSACTION', 'SIGNATURE']);
-        const addr = await window.arweaveWallet.getActiveAddress();
-        updateWalletDisplay(addr);
-        signer = createDataItemSigner(window.arweaveWallet);
-        console.log("Connection successful.");
-        return true;
-    } catch (err) {
-        console.error("Connection error:", err);
-        alert("连接失败：请检查 Wander 扩展是否登录、授权本网站，或刷新页面重试。错误详情：" + err.message);
-        return false;
-    }
-};
-
-
-    // 公共 AO 操作函数
+    
+    window.connectWallet = async function() {
+        console.log("[DEBUG] Starting wallet connection...");
+        if (!window.arweaveWallet) {
+            console.error("[ERROR] Wander extension not detected. Ensure it's installed and enabled.");
+            alert("未检测到 Wander 钱包扩展！请确保：1. 安装最新版 Wander (https://www.wander.app/download)；2. 在扩展中登录钱包；3. 刷新页面 (Ctrl+Shift+R) 重试。如果仍无反应，重启浏览器或检查扩展权限。");
+            return false;
+        }
+    
+        try {
+            console.log("[DEBUG] Calling connect with permissions...");
+            await window.arweaveWallet.connect(['ACCESS_ADDRESS', 'SIGN_TRANSACTION', 'SIGNATURE']);
+            const addr = await window.arweaveWallet.getActiveAddress();
+            updateWalletDisplay(addr);
+            signer = createDataItemSigner(window.arweaveWallet);
+            console.log("[SUCCESS] Wallet connected:", addr);
+            alert("钱包连接成功！");
+            return true;
+        } catch (err) {
+            console.error("[ERROR] Connection failed:", err);
+            alert("连接失败！请在 Wander 扩展中检查：1. 是否已登录钱包；2. 批准本网站权限；3. 无浏览器扩展冲突。错误详情: " + err.message + "\n刷新页面重试。");
+            return false;
+        }
+    };
+    
     window.aoDryrun = async (tags, owner = walletAddress) => {
         return await dryrun({ process: PROCESS_ID, tags, owner });
     };
-
+    
     window.aoMessage = async (tags, data = null) => {
         if (!signer) throw new Error("请先连接钱包");
         return await message({
@@ -59,23 +55,24 @@ window.connectWallet = async function() {
             data
         });
     };
-
-
-// 自动检测
-window.addEventListener('load', async () => {
-    if (window.arweaveWallet) {
-        try {
-            const addr = await window.arweaveWallet.getActiveAddress();
-            if (addr) {
-                updateWalletDisplay(addr);
-                signer = createDataItemSigner(window.arweaveWallet);
-                console.log("Auto-connected to existing session.");
+    
+    window.addEventListener('load', async () => {
+        console.log("[DEBUG] Page loaded, checking for existing wallet session...");
+        if (window.arweaveWallet) {
+            try {
+                const addr = await window.arweaveWallet.getActiveAddress();
+                if (addr) {
+                    updateWalletDisplay(addr);
+                    signer = createDataItemSigner(window.arweaveWallet);
+                    console.log("[SUCCESS] Auto-connected to existing session:", addr);
+                } else {
+                    console.log("[INFO] No existing session found.");
+                }
+            } catch (e) {
+                console.log("[INFO] No active wallet session.");
             }
-        } catch (e) {
-            console.log("No existing session.");
+        } else {
+            console.warn("[WARN] No wallet extension detected on load.");
         }
-    } else if (navigator.userAgent.match(/Mobi|Android/)) {
-        alert("如果是移动端，请使用 Wander 移动 App 的 'Explore Apps' 连接 DApp。浏览器扩展仅限桌面。");
-    }
-});
+    });
 </script>
