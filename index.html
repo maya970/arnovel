@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AO Novels - 图书馆</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body class="bg-slate-50 min-h-screen">
+    <nav class="bg-white border-b border-slate-200 px-6 py-4 flex justify-between items-center sticky top-0 z-10">
+        <div class="flex items-center gap-2">
+            <i data-lucide="book-open" class="text-blue-600"></i>
+            <h1 class="text-xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">AO Novels</h1>
+        </div>
+        <div class="flex gap-6 items-center">
+            <a href="index.html" class="font-medium text-blue-600">图书馆</a>
+            <a href="create.html" class="font-medium hover:text-blue-600">创作小说</a>
+            <button id="connectBtn" class="bg-slate-900 text-white px-4 py-2 rounded-lg hover:bg-slate-800 text-sm">
+                连接钱包
+            </button>
+        </div>
+    </nav>
+
+    <main class="max-w-5xl mx-auto p-6">
+        <div class="flex justify-between items-center mb-6">
+            <h2 class="text-2xl font-bold">所有小说</h2>
+            <button onclick="loadNovels()" class="text-blue-600 hover:underline">刷新</button>
+        </div>
+        <div id="novelList" class="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            <div class="p-12 text-center text-slate-400">加载中...</div>
+        </div>
+    </main>
+
+    <script src="common.js"></script>
+    <script>
+        lucide.createIcons();
+        document.getElementById('connectBtn').addEventListener('click', async () => {
+            if (await connectWallet()) {
+                document.getElementById('connectBtn').textContent = walletAddress.slice(0,6)+'...'+walletAddress.slice(-4);
+            }
+        });
+
+        async function loadNovels() {
+            document.getElementById('novelList').innerHTML = '<div class="col-span-full p-12 text-center text-slate-400">加载中...</div>';
+            try {
+                const res = await aoDryrun([{ name: 'Action', value: 'List-Novels' }]);
+                const novels = JSON.parse(res.Messages[0].Data);
+                const container = document.getElementById('novelList');
+                if (novels.length === 0) {
+                    container.innerHTML = '<div class="col-span-full p-12 text-center text-slate-400">还没有小说，快去创作第一本吧！</div>';
+                    return;
+                }
+                container.innerHTML = novels.map(n => `
+                    <a href="novel.html?id=${n.id}" class="block bg-white p-6 rounded-xl border border-slate-200 hover:shadow-lg transition">
+                        <h3 class="font-bold text-lg mb-2">${n.title}</h3>
+                        <p class="text-sm text-slate-500">作者: ${n.author.slice(0,6)}...${n.author.slice(-4)}</p>
+                        <div class="mt-4 text-xs text-slate-400">${n.chapterCount} 章</div>
+                    </a>
+                `).join('');
+            } catch (e) {
+                console.error(e);
+                document.getElementById('novelList').innerHTML = '<div class="col-span-full text-red-500 text-center">加载失败</div>';
+            }
+        }
+
+        loadNovels();
+    </script>
+</body>
+</html>
