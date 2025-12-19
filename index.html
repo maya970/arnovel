@@ -1,63 +1,308 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AO Novels - 图书馆</title>
+    <title>AO Novel Reader</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
 </head>
-<body class="bg-slate-50 min-h-screen">
+<body class="bg-slate-50 min-h-screen text-slate-800">
+
+    <!-- Navigation -->
     <nav class="bg-white border-b border-slate-200 px-6 py-4 flex justify-between items-center sticky top-0 z-10">
         <div class="flex items-center gap-2">
             <i data-lucide="book-open" class="text-blue-600"></i>
-            <h1 class="text-xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">AO Novels</h1>
+            <h1 class="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-600">AO Novels</h1>
         </div>
-        <div class="flex gap-6 items-center">
-            <a href="index.html" class="font-medium text-blue-600">图书馆</a>
-            <a href="create.html" class="font-medium hover:text-blue-600">创作小说</a>
-            <button id="connectBtn" onclick="connectWallet()" class="bg-slate-900 text-white px-4 py-2 rounded-lg hover:bg-slate-800 text-sm">
-                连接钱包
-            </button>
+        <div class="flex gap-4">
+            <button onclick="showView('home')" class="hover:text-blue-600 font-medium">Library</button>
+            <button onclick="showView('create')" class="hover:text-blue-600 font-medium">Author Studio</button>
         </div>
+        <button id="connectBtn" class="bg-slate-900 text-white px-4 py-2 rounded-lg hover:bg-slate-800 transition text-sm font-medium">
+            Connect Wallet
+        </button>
     </nav>
 
-    <main class="max-w-5xl mx-auto p-6">
-        <div class="flex justify-between items-center mb-6">
-            <h2 class="text-2xl font-bold">所有小说</h2>
-            <button onclick="loadNovels()" class="text-blue-600 hover:underline">刷新</button>
+    <!-- Main Content -->
+    <main class="max-w-4xl mx-auto p-6">
+        
+        <!-- View: Home (List Novels) -->
+        <div id="homeView" class="space-y-6">
+            <div class="flex justify-between items-center">
+                <h2 class="text-2xl font-bold">Latest Novels</h2>
+                <button onclick="loadNovels()" class="text-sm text-blue-600 hover:underline">Refresh</button>
+            </div>
+            <div id="novelList" class="grid gap-4 md:grid-cols-2">
+                <!-- Novels injected here -->
+                <div class="p-8 text-center text-slate-400 bg-white rounded-xl border border-slate-200">Loading novels...</div>
+            </div>
         </div>
-        <div id="novelList" class="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            <div class="col-span-full p-12 text-center text-slate-400">加载中...</div>
+
+        <!-- View: Create Novel -->
+        <div id="createView" class="hidden max-w-xl mx-auto bg-white p-8 rounded-xl shadow-sm border border-slate-200">
+            <h2 class="text-2xl font-bold mb-6">Create New Novel</h2>
+            <form id="createForm" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium mb-1">Title</label>
+                    <input type="text" id="newTitle" class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" required>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-1">Description</label>
+                    <textarea id="newDesc" class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" rows="3" required></textarea>
+                </div>
+                <button type="submit" class="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 font-medium">Create Novel</button>
+            </form>
         </div>
+
+        <!-- View: Novel Details & Chapters -->
+        <div id="novelDetailView" class="hidden space-y-6">
+            <button onclick="showView('home')" class="text-slate-500 hover:text-slate-800 flex items-center gap-1 text-sm">
+                <i data-lucide="arrow-left" class="w-4 h-4"></i> Back to Library
+            </button>
+            
+            <div id="novelHeader" class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+                <!-- Header injected here -->
+            </div>
+
+            <div id="authorControls" class="hidden bg-indigo-50 p-6 rounded-xl border border-indigo-100">
+                <h3 class="font-bold text-indigo-900 mb-4">Author Controls: Add Chapter</h3>
+                <form id="addChapterForm" class="space-y-3">
+                    <input type="hidden" id="targetNovelId">
+                    <div class="grid grid-cols-2 gap-4">
+                        <input type="text" id="chapTitle" placeholder="Chapter Title" class="p-2 border rounded bg-white" required>
+                        <div class="flex items-center gap-2">
+                            <label class="flex items-center gap-2 text-sm">
+                                <input type="checkbox" id="chapPaid"> Paid?
+                            </label>
+                            <input type="number" id="chapPrice" placeholder="Price (0 = auto)" class="p-2 border rounded bg-white w-full text-sm">
+                        </div>
+                    </div>
+                    <textarea id="chapContent" placeholder="Chapter Content..." class="w-full p-2 border rounded bg-white h-32" required></textarea>
+                    <button type="submit" class="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700 text-sm">Publish Chapter</button>
+                </form>
+            </div>
+
+            <div class="space-y-2">
+                <h3 class="font-bold text-lg">Chapters</h3>
+                <div id="chapterList" class="space-y-2">
+                    <!-- Chapters injected here -->
+                </div>
+            </div>
+        </div>
+
+        <!-- View: Reader -->
+        <div id="readerView" class="hidden">
+            <button onclick="backToNovel()" class="mb-4 text-slate-500 hover:text-slate-800 flex items-center gap-1 text-sm">
+                <i data-lucide="arrow-left" class="w-4 h-4"></i> Back to Novel
+            </button>
+            <div class="bg-white p-8 md:p-12 rounded-xl shadow-sm border border-slate-200 max-w-3xl mx-auto">
+                <h1 id="readTitle" class="text-3xl font-serif font-bold mb-6 text-slate-900"></h1>
+                <div id="readContent" class="prose prose-slate max-w-none font-serif leading-relaxed text-lg"></div>
+                
+                <div id="editControls" class="hidden mt-12 pt-8 border-t border-slate-100">
+                    <h4 class="font-bold text-sm text-slate-500 mb-2">AUTHOR: EDIT / FIX TYPOS</h4>
+                    <textarea id="editContent" class="w-full p-4 border rounded-lg bg-slate-50 text-sm font-mono" rows="10"></textarea>
+                    <button onclick="saveEdit()" class="mt-2 bg-slate-800 text-white px-4 py-2 rounded text-sm">Save New Version</button>
+                </div>
+            </div>
+        </div>
+
     </main>
 
     <script src="common.js"></script>
-    <script>
+    <script type="module">
         lucide.createIcons();
+        document.getElementById('connectBtn').addEventListener('click', connectWallet);
+        let currentNovelId = null;
+        let currentChapterIndex = null;
+        let currentNovelAuthor = null;
 
-        async function loadNovels() {
-            document.getElementById('novelList').innerHTML = '<div class="col-span-full p-12 text-center text-slate-400">加载中...</div>';
+        window.showView = (viewId) => {
+            ['homeView', 'createView', 'novelDetailView', 'readerView'].forEach(id => {
+                document.getElementById(id).classList.add('hidden');
+            });
+            document.getElementById(viewId + (viewId.endsWith('View') ? '' : 'View')).classList.remove('hidden');
+            if (viewId === 'home') loadNovels();
+        };
+
+        window.backToNovel = () => {
+            if (currentNovelId) loadNovelDetails(currentNovelId);
+        };
+
+        window.loadNovels = async () => {
+            document.getElementById('novelList').innerHTML = '<div class="p-8 text-center text-slate-400">Loading...</div>';
             try {
                 const res = await aoDryrun([{ name: 'Action', value: 'List-Novels' }]);
                 const novels = JSON.parse(res.Messages[0].Data);
-                const container = document.getElementById('novelList');
-                if (novels.length === 0) {
-                    container.innerHTML = '<div class="col-span-full p-12 text-center text-slate-400">还没有小说，快去创作第一本吧！</div>';
-                    return;
-                }
-                container.innerHTML = novels.map(n => `
-                    <a href="novel.html?id=${n.id}" class="block bg-white p-6 rounded-xl border border-slate-200 hover:shadow-lg transition">
-                        <h3 class="font-bold text-lg mb-2">${n.title}</h3>
-                        <p class="text-sm text-slate-500">作者: ${n.author.slice(0,6)}...${n.author.slice(-4)}</p>
-                        <div class="mt-4 text-xs text-slate-400">${n.chapterCount} 章</div>
-                    </a>
+                document.getElementById('novelList').innerHTML = novels.map(n => `
+                    <div onclick="loadNovelDetails('${n.id}')" class="bg-white p-6 rounded-xl border border-slate-200 hover:shadow-md transition cursor-pointer group">
+                        <h3 class="font-bold text-lg group-hover:text-blue-600">${n.title}</h3>
+                        <p class="text-sm text-slate-500 mt-1">By ${n.author.slice(0,6)}...${n.author.slice(-4)}</p>
+                        <div class="mt-4 flex items-center gap-2 text-xs font-medium text-slate-400">
+                            <span class="bg-slate-100 px-2 py-1 rounded">${n.chapterCount} Chapters</span>
+                        </div>
+                    </div>
                 `).join('');
             } catch (e) {
                 console.error(e);
-                document.getElementById('novelList').innerHTML = '<div class="col-span-full text-red-500 text-center">加载失败，请检查网络或进程状态</div>';
+                document.getElementById('novelList').innerHTML = '<div class="p-8 text-center text-red-500">Load failed</div>';
+            }
+        };
+
+        document.getElementById('createForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            if (!walletAddress) {
+                if (!await connectWallet()) return;
+            }
+            const title = document.getElementById('newTitle').value.trim();
+            const desc = document.getElementById('newDesc').value.trim();
+            if (!title) return alert("Title required");
+            try {
+                await aoMessage([
+                    { name: 'Action', value: 'Create-Novel' },
+                    { name: 'Title', value: title },
+                    { name: 'Description', value: desc }
+                ]);
+                alert("Novel created!");
+                document.getElementById('createForm').reset();
+                showView('home');
+            } catch (e) {
+                alert("Error: " + e.message);
+            }
+        });
+
+        window.loadNovelDetails = async (id) => {
+            currentNovelId = id;
+            showView('novelDetailView');
+            document.getElementById('chapterList').innerHTML = '<div class="p-4 text-center text-slate-400">Loading...</div>';
+            try {
+                const res = await aoDryrun([
+                    { name: 'Action', value: 'Get-Novel' },
+                    { name: 'NovelId', value: id }
+                ]);
+                const novel = JSON.parse(res.Messages[0].Data);
+                currentNovelAuthor = novel.author;
+                document.getElementById('novelHeader').innerHTML = `
+                    <h1 class="text-3xl font-bold mb-2">${novel.title}</h1>
+                    <p class="text-slate-600 mb-4">${novel.description}</p>
+                    <div class="flex items-center gap-4 text-sm text-slate-500">
+                        <span>Author: ${novel.author}</span>
+                        <span class="bg-blue-50 text-blue-700 px-2 py-0.5 rounded border border-blue-100">Mode: ${novel.pricingType}</span>
+                    </div>
+                `;
+                const isAuthor = walletAddress === novel.author;
+                document.getElementById('authorControls').classList.toggle('hidden', !isAuthor);
+                if (isAuthor) document.getElementById('targetNovelId').value = id;
+                document.getElementById('chapterList').innerHTML = novel.chapters.map(c => `
+                    <div class="flex items-center justify-between p-4 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition">
+                        <div>
+                            <h4 class="font-medium">Chapter ${c.index}: ${c.title}</h4>
+                            <p class="text-xs text-slate-400 mt-1">≈ ${Math.ceil(c.wordCount / 3)} 字</p>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            ${c.isPaid ? `<span class="text-xs font-bold text-amber-600 bg-amber-50 px-2 py-1 rounded border border-amber-100">PAID: ${c.price}</span>` : `<span class="text-xs font-bold text-green-600 bg-green-50 px-2 py-1 rounded border border-green-100">FREE</span>`}
+                            <button onclick="readChapter('${id}', ${c.index})" class="bg-slate-900 text-white text-sm px-3 py-1.5 rounded hover:bg-slate-700">
+                                Read
+                            </button>
+                        </div>
+                    </div>
+                `).join('');
+            } catch (e) {
+                console.error(e);
+                document.getElementById('chapterList').innerHTML = '<div class="p-4 text-center text-red-500">Load failed</div>';
+            }
+        };
+
+        document.getElementById('addChapterForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            if (!walletAddress) {
+                if (!await connectWallet()) return;
+            }
+            const novelId = document.getElementById('targetNovelId').value;
+            const title = document.getElementById('chapTitle').value.trim();
+            const content = document.getElementById('chapContent').value;
+            const isPaid = document.getElementById('chapPaid').checked;
+            const price = document.getElementById('chapPrice').value || '0';
+            if (!title || !content) return alert("Title and content required");
+            try {
+                await aoMessage([
+                    { name: 'Action', value: 'Add-Chapter' },
+                    { name: 'NovelId', value: novelId },
+                    { name: 'Title', value: title },
+                    { name: 'IsPaid', value: isPaid ? 'true' : 'false' },
+                    { name: 'Price', value: price }
+                ], content);
+                alert("Chapter published!");
+                document.getElementById('addChapterForm').reset();
+                loadNovelDetails(novelId);
+            } catch (e) {
+                alert("Error: " + e.message);
+            }
+        });
+
+        window.readChapter = async (novelId, chapterIndex) => {
+            currentChapterIndex = chapterIndex;
+            const res = await aoDryrun([
+                { name: 'Action', value: 'Read-Chapter' },
+                { name: 'NovelId', value: novelId },
+                { name: 'ChapterIndex', value: String(chapterIndex) }
+            ]);
+            const data = JSON.parse(res.Messages[0].Data);
+            if (data.error === "LOCKED") {
+                if (confirm(`Locked. Price: ${data.price}. Buy?`)) {
+                    await buyChapter(novelId, chapterIndex);
+                }
+            } else {
+                showView('readerView');
+                document.getElementById('readTitle').textContent = data.title;
+                document.getElementById('readContent').innerHTML = data.content
+                    .replace(/\n\n/g, '</p><p class="mt-6">')
+                    .replace(/\n/g, '<br>');
+                const editArea = document.getElementById('editControls');
+                if (walletAddress === currentNovelAuthor) {
+                    editArea.classList.remove('hidden');
+                    document.getElementById('editContent').value = data.content;
+                } else {
+                    editArea.classList.add('hidden');
+                }
+            }
+        };
+
+        async function buyChapter(novelId, chapterIndex) {
+            if (!walletAddress) {
+                if (!await connectWallet()) return;
+            }
+            try {
+                await aoMessage([
+                    { name: 'Action', value: 'Buy-Chapter' },
+                    { name: 'NovelId', value: novelId },
+                    { name: 'ChapterIndex', value: String(chapterIndex) }
+                ]);
+                alert("Purchased!");
+                readChapter(novelId, chapterIndex);
+            } catch (e) {
+                alert("Error: " + e.message);
             }
         }
+
+        window.saveEdit = async () => {
+            if (!walletAddress) {
+                if (!await connectWallet()) return;
+            }
+            const newContent = document.getElementById('editContent').value;
+            try {
+                await aoMessage([
+                    { name: 'Action', value: 'Update-Chapter' },
+                    { name: 'NovelId', value: currentNovelId },
+                    { name: 'ChapterIndex', value: String(currentChapterIndex) }
+                ], newContent);
+                alert("Updated!");
+                readChapter(currentNovelId, currentChapterIndex);
+            } catch (e) {
+                alert("Error: " + e.message);
+            }
+        };
 
         loadNovels();
     </script>
