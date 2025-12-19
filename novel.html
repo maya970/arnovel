@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>小说详情 - AO Novels</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body class="bg-slate-50 min-h-screen">
+    <nav class="bg-white border-b px-6 py-4 flex justify-between items-center">
+        <a href="index.html" class="flex items-center gap-2">
+            <i data-lucide="book-open" class="text-blue-600"></i>
+            <h1 class="text-xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">AO Novels</h1>
+        </a>
+        <a href="index.html" class="text-sm text-slate-500 hover:text-slate-700">← 返回图书馆</a>
+    </nav>
+
+    <main class="max-w-4xl mx-auto p-6">
+        <div id="header" class="bg-white p-8 rounded-xl border shadow-sm mb-8"></div>
+
+        <div id="authorPanel" class="hidden bg-indigo-50 p-6 rounded-xl border border-indigo-100 mb-8">
+            <h3 class="font-bold text-indigo-900 mb-4">作者工具：发布新章节</h3>
+            <form id="addForm" class="space-y-4">
+                <input type="text" id="chapTitle" placeholder="章节标题" required class="w-full p-3 border rounded">
+                <div class="grid grid-cols-2 gap-4">
+                    <label class="flex items-center gap-2">
+                        <input type="checkbox" id="isPaid"> 付费章节
+                    </label>
+                    <input type="number" id="price" placeholder="价格（0=按字数）" class="p-3 border rounded">
+                </div>
+                <textarea id="content" placeholder="章节正文..." required class="w-full p-3 border rounded h-40"></textarea>
+                <button type="submit" class="bg-indigo-600 text-white px-6 py-3 rounded hover:bg-indigo-700">发布章节</button>
+            </form>
+        </div>
+
+        <h3 class="text-xl font-bold mb-4">章节列表</h3>
+        <div id="chapters" class="space-y-3"></div>
+    </main>
+
+    <script src="common.js"></script>
+    <script>
+        lucide.createIcons();
+        const urlParams = new URLSearchParams(location.search);
+        const novelId = urlParams.get('id');
+        let novelAuthor = null;
+
+        async function loadNovel() {
+            if (!novelId) return alert("无效小说ID");
+            try {
+                const res = await aoDryrun([
+                    { name: 'Action', value: 'Get-Novel' },
+                    { name: 'NovelId', value: novelId }
+                ]);
+                const novel = JSON.parse(res.Messages[0].Data);
+                novelAuthor = novel.author;
+
+                document.getElementById('header').innerHTML = `
+                    <h1 class="text-3xl font-bold mb-3">${novel.title}</h1>
+                    <p class="text-slate-600 mb-4">${novel.description || '无简介'}</p>
+                    <p class="text-sm text-slate-500">作者: ${novel.author}</p>
+                `;
+
+                if (walletAddress === novel.author) {
+                    document.getElementById('authorPanel').classList.remove('hidden');
+                }
+
+                const list = document.getElementById('chapters');
+                list.innerHTML = novel.chapters.map(c => `
+                    <a href="reader.html?novel=${novelId}&chap=${c.index}" class="flex justify-between items-center p-5 bg-white border rounded-lg hover:bg-slate-50">
+                        <div>
+                            <h4 class="font-medium">第 ${c.index} 章：${c.title || '无标题'}</h4>
+                            <p class="text-xs text-slate-400">≈ ${Math.ceil(c.wordCount / 3)} 字</p>
+                        </div>
+                        <div class="flex items-center gap-4">
+                            ${c.isPaid ? `<span class="bg-amber-100 text-amber-700 px-3 py-1 rounded text-sm">付费 ${c.price}</span>` : `<span class="bg-green-100 text-green-700 px-3 py-1 rounded text-sm">免费</span>`}
+                            <span class="text-blue-600">阅读 →</span>
+                        </div>
+                    </a>
+                `).join('');
+            } catch (e) {
+                alert("加载失败");
+            }
+        }
+
+        document.getElementById('addForm')?.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const title = document.getElementById('chapTitle').value;
+            const content = document.getElementById('content').value;
+            const isPaid = document.getElementById('isPaid').checked;
+            const price = document.getElementById('price').value || '0';
+
+            try {
+                await aoMessage([
+                    { name: 'Action', value: 'Add-Chapter' },
+                    { name: 'NovelId', value: novelId },
+                    { name: 'Title', value: title },
+                    { name: 'IsPaid', value: isPaid ? 'true' : 'false' },
+                    { name: 'Price', value: price }
+                ], content);
+                alert("章节发布成功！");
+                loadNovel();
+            } catch (err) {
+                alert("发布失败: " + err.message);
+            }
+        });
+
+        loadNovel();
+    </script>
+</body>
+</html>
