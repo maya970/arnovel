@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AO Novel Reader</title>
+    <title>AO Novels - 去中心化小说平台</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
 </head>
@@ -16,94 +16,86 @@
             <h1 class="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-600">AO Novels</h1>
         </div>
         <div class="flex gap-4">
-            <button onclick="showView('home')" class="hover:text-blue-600 font-medium">Library</button>
-            <button onclick="showView('create')" class="hover:text-blue-600 font-medium">Author Studio</button>
+            <button onclick="showView('home')" class="hover:text-blue-600 font-medium">图书馆</button>
+            <button onclick="showView('create')" class="hover:text-blue-600 font-medium">创作小说</button>
         </div>
-        <button id="connectBtn" onclick="connectWallet()" class="bg-slate-900 text-white px-4 py-2 rounded-lg hover:bg-slate-800 transition text-sm font-medium">
-            Connect Wallet
+        <button id="connectBtn" class="bg-slate-900 text-white px-4 py-2 rounded-lg hover:bg-slate-800 transition text-sm font-medium opacity-50 cursor-not-allowed" disabled>
+            连接钱包 (等待 Wander 加载...)
         </button>
     </nav>
 
     <!-- Main Content -->
     <main class="max-w-4xl mx-auto p-6">
         
-        <!-- View: Home (List Novels) -->
+        <!-- Home View -->
         <div id="homeView" class="space-y-6">
             <div class="flex justify-between items-center">
-                <h2 class="text-2xl font-bold">Latest Novels</h2>
-                <button onclick="loadNovels()" class="text-sm text-blue-600 hover:underline">Refresh</button>
+                <h2 class="text-2xl font-bold">所有小说</h2>
+                <button onclick="loadNovels()" class="text-sm text-blue-600 hover:underline">刷新</button>
             </div>
             <div id="novelList" class="grid gap-4 md:grid-cols-2">
-                <!-- Novels injected here -->
-                <div class="p-8 text-center text-slate-400 bg-white rounded-xl border border-slate-200">Loading novels...</div>
+                <div class="p-8 text-center text-slate-400 bg-white rounded-xl border border-slate-200">加载中...</div>
             </div>
         </div>
 
-        <!-- View: Create Novel -->
+        <!-- Create View -->
         <div id="createView" class="hidden max-w-xl mx-auto bg-white p-8 rounded-xl shadow-sm border border-slate-200">
-            <h2 class="text-2xl font-bold mb-6">Create New Novel</h2>
+            <h2 class="text-2xl font-bold mb-6">创作新小说</h2>
             <form id="createForm" class="space-y-4">
                 <div>
-                    <label class="block text-sm font-medium mb-1">Title</label>
+                    <label class="block text-sm font-medium mb-1">标题</label>
                     <input type="text" id="newTitle" class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" required>
                 </div>
                 <div>
-                    <label class="block text-sm font-medium mb-1">Description</label>
-                    <textarea id="newDesc" class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" rows="3" required></textarea>
+                    <label class="block text-sm font-medium mb-1">简介（可选）</label>
+                    <textarea id="newDesc" class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" rows="3"></textarea>
                 </div>
-                <button type="submit" class="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 font-medium">Create Novel</button>
+                <button type="submit" class="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 font-medium">创建小说</button>
             </form>
         </div>
 
-        <!-- View: Novel Details & Chapters -->
+        <!-- Novel Detail View -->
         <div id="novelDetailView" class="hidden space-y-6">
             <button onclick="showView('home')" class="text-slate-500 hover:text-slate-800 flex items-center gap-1 text-sm">
-                <i data-lucide="arrow-left" class="w-4 h-4"></i> Back to Library
+                <i data-lucide="arrow-left" class="w-4 h-4"></i> 返回图书馆
             </button>
-            
-            <div id="novelHeader" class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
-                <!-- Header injected here -->
-            </div>
+            <div id="novelHeader" class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm"></div>
 
             <div id="authorControls" class="hidden bg-indigo-50 p-6 rounded-xl border border-indigo-100">
-                <h3 class="font-bold text-indigo-900 mb-4">Author Controls: Add Chapter</h3>
+                <h3 class="font-bold text-indigo-900 mb-4">发布新章节</h3>
                 <form id="addChapterForm" class="space-y-3">
                     <input type="hidden" id="targetNovelId">
-                    <div class="grid grid-cols-2 gap-4">
-                        <input type="text" id="chapTitle" placeholder="Chapter Title" class="p-2 border rounded bg-white" required>
-                        <div class="flex items-center gap-2">
-                            <label class="flex items-center gap-2 text-sm">
-                                <input type="checkbox" id="chapPaid"> Paid?
-                            </label>
-                            <input type="number" id="chapPrice" placeholder="Price (0 = auto)" class="p-2 border rounded bg-white w-full text-sm">
-                        </div>
+                    <input type="text" id="chapTitle" placeholder="章节标题" class="w-full p-2 border rounded bg-white" required>
+                    <div class="flex items-center gap-2">
+                        <label class="flex items-center gap-2 text-sm">
+                            <input type="checkbox" id="chapPaid"> 付费
+                        </label>
+                        <input type="number" id="chapPrice" placeholder="价格 (0 = 自动)" class="p-2 border rounded bg-white w-full text-sm">
                     </div>
-                    <textarea id="chapContent" placeholder="Chapter Content..." class="w-full p-2 border rounded bg-white h-32" required></textarea>
-                    <button type="submit" class="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700 text-sm">Publish Chapter</button>
+                    <textarea id="chapContent" placeholder="章节内容..." class="w-full p-2 border rounded bg-white h-40" required></textarea>
+                    <button type="submit" class="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700 text-sm">发布</button>
                 </form>
             </div>
 
             <div class="space-y-2">
-                <h3 class="font-bold text-lg">Chapters</h3>
-                <div id="chapterList" class="space-y-2">
-                    <!-- Chapters injected here -->
-                </div>
+                <h3 class="font-bold text-lg">章节列表</h3>
+                <div id="chapterList" class="space-y-2"></div>
             </div>
         </div>
 
-        <!-- View: Reader -->
+        <!-- Reader View -->
         <div id="readerView" class="hidden">
             <button onclick="backToNovel()" class="mb-4 text-slate-500 hover:text-slate-800 flex items-center gap-1 text-sm">
-                <i data-lucide="arrow-left" class="w-4 h-4"></i> Back to Novel
+                <i data-lucide="arrow-left" class="w-4 h-4"></i> 返回小说
             </button>
             <div class="bg-white p-8 md:p-12 rounded-xl shadow-sm border border-slate-200 max-w-3xl mx-auto">
                 <h1 id="readTitle" class="text-3xl font-serif font-bold mb-6 text-slate-900"></h1>
                 <div id="readContent" class="prose prose-slate max-w-none font-serif leading-relaxed text-lg"></div>
                 
                 <div id="editControls" class="hidden mt-12 pt-8 border-t border-slate-100">
-                    <h4 class="font-bold text-sm text-slate-500 mb-2">AUTHOR: EDIT / FIX TYPOS</h4>
-                    <textarea id="editContent" class="w-full p-4 border rounded-lg bg-slate-50 text-sm font-mono" rows="10"></textarea>
-                    <button onclick="saveEdit()" class="mt-2 bg-slate-800 text-white px-4 py-2 rounded text-sm">Save New Version</button>
+                    <h4 class="font-bold text-sm text-slate-500 mb-2">作者编辑</h4>
+                    <textarea id="editContent" class="w-full p-4 border rounded-lg bg-slate-50 text-sm font-mono" rows="15"></textarea>
+                    <button onclick="saveEdit()" class="mt-2 bg-slate-800 text-white px-4 py-2 rounded text-sm">保存</button>
                 </div>
             </div>
         </div>
@@ -111,67 +103,99 @@
     </main>
 
     <script type="module">
-        import { createDataItemSigner, message, dryrun } from "https://unpkg.com/@permaweb/aoconnect@0.0.52";
+        import { createDataItemSigner, message, dryrun } from "https://unpkg.com/@permaweb/aoconnect@0.0.52"; // 稳定版，无模块错误
         
         const PROCESS_ID = "51tMVLxBazWMBT9NhfaCuDP3HjQfZOggIcT7l9mRrbw";
         let walletAddress = null;
+        let signer = null;
         let currentNovelId = null;
         let currentChapterIndex = null;
+        let currentNovelAuthor = null;
 
-        // Icons
         lucide.createIcons();
 
-        // --- Wallet Logic ---
         const connectBtn = document.getElementById('connectBtn');
-        connectBtn.addEventListener('click', async () => {
-            if (window.arweaveWallet) {
+
+        // 等待 Wander 扩展加载
+        window.addEventListener('arweaveWalletLoaded', async () => {
+            console.log("Wander 扩展已加载，可以连接钱包");
+            connectBtn.textContent = "连接钱包";
+            connectBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+            connectBtn.disabled = false;
+
+            // 自动连接（如果已授权）
+            try {
+                walletAddress = await window.arweaveWallet.getActiveAddress();
+                if (walletAddress) {
+                    connectBtn.textContent = walletAddress.slice(0, 6) + '...' + walletAddress.slice(-4);
+                    connectBtn.classList.add('text-green-600');
+                    signer = createDataItemSigner(window.arweaveWallet);
+                    loadNovels(); // 连接后自动刷新
+                }
+            } catch (e) {}
+        });
+
+        // 手动连接
+        async function connectWallet() {
+            if (!window.arweaveWallet) {
+                alert("未检测到 Wander 扩展！请确认已安装并刷新页面。下载：https://www.wander.app/download");
+                return;
+            }
+            try {
                 await window.arweaveWallet.connect(['ACCESS_ADDRESS', 'SIGN_TRANSACTION']);
                 walletAddress = await window.arweaveWallet.getActiveAddress();
                 connectBtn.textContent = walletAddress.slice(0, 6) + '...' + walletAddress.slice(-4);
+                connectBtn.classList.add('text-green-600');
+                signer = createDataItemSigner(window.arweaveWallet);
+                alert("钱包连接成功！");
                 loadNovels();
-            } else {
-                alert("Please install ArConnect");
+            } catch (err) {
+                alert("连接被拒绝或出错，请在弹窗中批准权限。");
             }
-        });
+        }
 
-        // --- Navigation ---
-        window.showView = (viewId) => {
-            ['homeView', 'createView', 'novelDetailView', 'readerView'].forEach(id => {
-                document.getElementById(id).classList.add('hidden');
-            });
-            document.getElementById(viewId + (viewId.endsWith('View') ? '' : 'View')).classList.remove('hidden');
-            if(viewId === 'home') loadNovels();
+        // 视图切换
+        window.showView = (view) => {
+            document.querySelectorAll('#homeView, #createView, #novelDetailView, #readerView').forEach(el => el.classList.add('hidden'));
+            document.getElementById(view + 'View').classList.remove('hidden');
+            if (view === 'home') loadNovels();
         };
 
-        window.backToNovel = () => {
-            if(currentNovelId) loadNovelDetails(currentNovelId);
-        };
+        window.backToNovel = () => loadNovelDetails(currentNovelId);
 
-        // --- Actions ---
+        // AO 操作
+        async function aoDryrun(tags, owner = walletAddress) {
+            return await dryrun({ process: PROCESS_ID, tags, owner });
+        }
 
-        // 1. List Novels
+        async function aoMessage(tags, data = null) {
+            if (!signer) {
+                if (!await connectWallet()) throw new Error("连接取消");
+            }
+            return await message({ process: PROCESS_ID, signer, tags, data });
+        }
+
+        // 加载小说列表
         window.loadNovels = async () => {
+            const container = document.getElementById('novelList');
+            container.innerHTML = '<div class="p-8 text-center text-slate-400">加载中...</div>';
             try {
-                const res = await dryrun({
-                    process: PROCESS_ID,
-                    tags: [{ name: 'Action', value: 'List-Novels' }]
-                });
+                const res = await aoDryrun([{ name: 'Action', value: 'List-Novels' }]);
                 const novels = JSON.parse(res.Messages[0].Data);
-                const container = document.getElementById('novelList');
-                container.innerHTML = novels.map(n => `
-                    <div onclick="loadNovelDetails('${n.id}')" class="bg-white p-6 rounded-xl border border-slate-200 hover:shadow-md transition cursor-pointer group">
-                        <h3 class="font-bold text-lg group-hover:text-blue-600">${n.title}</h3>
-                        <p class="text-sm text-slate-500 mt-1">By ${n.author.slice(0,6)}...</p>
-                        <div class="mt-4 flex items-center gap-2 text-xs font-medium text-slate-400">
-                            <span class="bg-slate-100 px-2 py-1 rounded">${n.chapterCount} Chapters</span>
+                container.innerHTML = novels.length === 0 
+                    ? '<div class="p-8 text-center text-slate-400 col-span-2">暂无小说</div>'
+                    : novels.map(n => `
+                        <div onclick="loadNovelDetails('${n.id}')" class="bg-white p-6 rounded-xl border border-slate-200 hover:shadow-md cursor-pointer">
+                            <h3 class="font-bold text-lg">${n.title}</h3>
+                            <p class="text-sm text-slate-500 mt-1">作者: ${n.author.slice(0,10)}...</p>
+                            <div class="mt-4 text-xs text-slate-400">${n.chapterCount} 章</div>
                         </div>
-                    </div>
-                `).join('');
+                    `).join('');
             } catch (e) {
-                console.error(e);
+                container.innerHTML = '<div class="p-8 text-center text-red-500">加载失败，请连接钱包后刷新</div>';
             }
         };
-
+        
         // 2. Create Novel
         document.getElementById('createForm').addEventListener('submit', async (e) => {
             e.preventDefault();
