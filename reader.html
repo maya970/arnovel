@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>阅读章节 - AO Novels</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        .prose p { margin-bottom: 1.5em; }
+    </style>
+</head>
+<body class="bg-slate-50 min-h-screen">
+    <nav class="bg-white border-b px-6 py-4 flex justify-between items-center">
+        <a href="index.html" class="flex items-center gap-2">
+            <i data-lucide="book-open" class="text-blue-600"></i>
+            <h1 class="text-xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">AO Novels</h1>
+        </a>
+    </nav>
+
+    <main class="max-w-3xl mx-auto p-6">
+        <a href="javascript:history.back()" class="text-slate-500 hover:text-slate-700 text-sm mb-4 inline-block">← 返回</a>
+        <div class="bg-white rounded-xl shadow-sm border p-8 md:p-12">
+            <h1 id="title" class="text-3xl font-serif font-bold mb-8 text-center"></h1>
+            <div id="content" class="prose prose-lg max-w-none font-serif leading-relaxed text-lg text-slate-800"></div>
+
+            <div id="editPanel" class="hidden mt-12 pt-8 border-t">
+                <h4 class="font-bold text-slate-600 mb-4">作者编辑（修复错字 / 更新内容）</h4>
+                <textarea id="editText" class="w-full p-4 border rounded-lg font-mono text-sm h-96 bg-slate-50"></textarea>
+                <button onclick="saveEdit()" class="mt-4 bg-slate-800 text-white px-6 py-3 rounded hover:bg-slate-900">保存新版本</button>
+            </div>
+        </div>
+    </main>
+
+    <script src="common.js"></script>
+    <script>
+        lucide.createIcons();
+        const params = new URLSearchParams(location.search);
+        const novelId = params.get('novel');
+        const chapIndex = params.get('chap');
+        let isAuthor = false;
+
+        async function loadChapter() {
+            try {
+                const res = await aoDryrun([
+                    { name: 'Action', value: 'Read-Chapter' },
+                    { name: 'NovelId', value: novelId },
+                    { name: 'ChapterIndex', value: chapIndex }
+                ]);
+                const data = JSON.parse(res.Messages[0].Data);
+
+                if (data.error === "LOCKED") {
+                    if (confirm(`本章需付费解锁，价格：${data.price} tokens\n是否购买？`)) {
+                        await aoMessage([
+                            { name: 'Action', value: 'Buy-Chapter' },
+                            { name: 'NovelId', value: novelId },
+                            { name: 'ChapterIndex', value: chapIndex }
+                        ]);
+                        loadChapter(); // 重新加载
+                    }
+                    return;
+                }
+
+                document.getElementById('title').textContent = data.title || `第 ${chapIndex} 章`;
+                const contentDiv = document.getElementById('content');
+                contentDiv.innerHTML = '<p>' + data.content
+                    .replace(/\n\n/g, '</p><p>')
+                    .replace(/\n/g, '<br>') + '</p>';
+
+                // 检查是否是作者（通过再次查询小说作者）
+                const novelRes = await aoDryrun([
+                    { name: 'Action', value: 'Get-Novel' },
+                    { name: 'NovelId', value: novelId }
+                ]);
+                const novel = JSON.parse(novelRes.Messages[0].Data);
+                if (walletAddress === novel.author) {
+                    document.getElementById('editPanel').classList.remove('hidden');
+                    document.getElementById('editText').value = data.content;
+                    isAuthor = true;
+                }
+            } catch (e) {
+                alert("加载失败");
+            }
+        }
+
+        window.saveEdit = async () => {
+            if (!isAuthor) return;
+            const newContent = document.getElementById('editText').value;
+            try {
+                await aoMessage([
+                    { name: 'Action', value: 'Update-Chapter' },
+                    { name: 'NovelId', value: novelId },
+                    { name: 'ChapterIndex', value: chapIndex }
+                ], newContent);
+                alert("更新成功！旧版本已保存");
+                loadChapter();
+            } catch (err) {
+                alert("更新失败");
+            }
+        };
+
+        loadChapter();
+    </script>
+</body>
+</html>
