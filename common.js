@@ -1,4 +1,4 @@
-<script type="module">
+
     import { createDataItemSigner, message, dryrun } from "https://unpkg.com/@permaweb/aoconnect@0.0.52";
     
     const PROCESS_ID = "51tMVLxBazWMBT9NhfaCuDP3HjQfZOggIcT7l9mRrbw";
@@ -75,4 +75,4 @@
             console.warn("[WARN] No wallet extension detected on load.");
         }
     });
-</script>
+
