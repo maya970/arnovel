@@ -1,5 +1,5 @@
 
-  //  import { createDataItemSigner, message, dryrun } from "https://unpkg.com/@permaweb/aoconnect@0.0.52";
+   import { createDataItemSigner, message, dryrun } from "https://unpkg.com/@permaweb/aoconnect@0.0.52";
     
     const PROCESS_ID = "51tMVLxBazWMBT9NhfaCuDP3HjQfZOggIcT7l9mRrbw";
     window.PROCESS_ID = PROCESS_ID;
