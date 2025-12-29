@@ -4,12 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Novel Platform Frontend</title>
-    <!-- Arweave scripts (keep if needed; may not be required for wallet extension) -->
-    <script src="https://unpkg.com/arweave/bundles/web.bundle.js"></script>
-    <script src="https://unpkg.com/arweave/bundles/web.bundle.min.js"></script>
-    <script src="https://unpkg.com/arweave@1.2.0/bundles/web.bundle.js"></script>
-    <script src="https://unpkg.com/arweave@1.2.0/bundles/web.bundle.min.js"></script>
-    <!-- Load common.js as module for ESM imports -->
+    <!-- Load common.js as module -->
     <script type="module" src="common.js"></script>
     <style>
         body { font-family: Arial, sans-serif; margin: 20px; }
@@ -25,6 +20,7 @@
         <button id="connect-wallet">Connect Wallet (Wander)</button>
         <p>Wallet Address: <span id="wallet-address" class="wallet-address">Not connected</span></p>
     </section>
+    <!-- Other sections unchanged... -->
     <section id="create-novel">
         <h2>Create Novel</h2>
         <input id="novel-title" placeholder="Title" />
@@ -81,107 +77,145 @@
         <pre id="earnings-result"></pre>
     </section>
     <script>
-        // Use functions from common.js (no local redefinition)
-        document.getElementById('connect-wallet').addEventListener('click', window.connectWallet);
+        window.addEventListener('load', () => {
+            if (!window.connectWallet) {
+                alert('common.js 未加载成功 - 请检查网络或 unpkg.com 访问，尝试 Ctrl+Shift+R 刷新。');
+                return;
+            }
+            document.getElementById('connect-wallet').addEventListener('click', window.connectWallet);
 
-        // Create Novel
-        document.getElementById('create-novel-btn').addEventListener('click', async () => {
-            if (!window.walletAddress) return alert('Connect wallet first!');
-            const title = document.getElementById('novel-title').value;
-            const desc = document.getElementById('novel-description').value;
-            const tags = [
-                { name: 'Action', value: 'Create-Novel' },
-                { name: 'Title', value: title },
-                { name: 'Description', value: desc }
-            ];
-            const output = await window.aoMessage(tags);
-            document.getElementById('create-result').textContent = output;
-        });
+            // Create Novel
+            document.getElementById('create-novel-btn').addEventListener('click', async () => {
+                if (!window.walletAddress) return alert('Connect wallet first!');
+                const title = document.getElementById('novel-title').value;
+                const desc = document.getElementById('novel-description').value;
+                const tags = [
+                    { name: 'Action', value: 'Create-Novel' },
+                    { name: 'Title', value: title },
+                    { name: 'Description', value: desc }
+                ];
+                try {
+                    const output = await window.aoMessage(tags);
+                    document.getElementById('create-result').textContent = output;
+                } catch (e) {
+                    alert('AO 操作失败: ' + e.message);
+                }
+            });
 
-        // List Novels
-        document.getElementById('list-novels-btn').addEventListener('click', async () => {
-            const tags = [{ name: 'Action', value: 'List-Novels' }];
-            const output = await window.aoDryrun(tags);
-            document.getElementById('list-result').textContent = output;
-        });
+            // List Novels
+            document.getElementById('list-novels-btn').addEventListener('click', async () => {
+                const tags = [{ name: 'Action', value: 'List-Novels' }];
+                try {
+                    const output = await window.aoDryrun(tags);
+                    document.getElementById('list-result').textContent = output;
+                } catch (e) {
+                    alert('AO 操作失败: ' + e.message);
+                }
+            });
 
-        // Get Novel
-        document.getElementById('get-novel-btn').addEventListener('click', async () => {
-            const id = document.getElementById('novel-id').value;
-            const tags = [
-                { name: 'Action', value: 'Get-Novel' },
-                { name: 'NovelId', value: id }
-            ];
-            const output = await window.aoDryrun(tags);
-            document.getElementById('novel-result').textContent = output;
-        });
+            // Other event listeners unchanged, but wrapped in try-catch for better errors...
+            // Get Novel
+            document.getElementById('get-novel-btn').addEventListener('click', async () => {
+                const id = document.getElementById('novel-id').value;
+                const tags = [
+                    { name: 'Action', value: 'Get-Novel' },
+                    { name: 'NovelId', value: id }
+                ];
+                try {
+                    const output = await window.aoDryrun(tags);
+                    document.getElementById('novel-result').textContent = output;
+                } catch (e) {
+                    alert('AO 操作失败: ' + e.message);
+                }
+            });
 
-        // Add Chapter
-        document.getElementById('add-chapter-btn').addEventListener('click', async () => {
-            if (!window.walletAddress) return alert('Connect wallet first!');
-            const id = document.getElementById('add-novel-id').value;
-            const title = document.getElementById('chapter-title').value;
-            const content = document.getElementById('chapter-content').value;
-            const isPaid = document.getElementById('is-paid').checked ? 'true' : 'false';
-            const price = document.getElementById('chapter-price').value || '0';
-            const tags = [
-                { name: 'Action', value: 'Add-Chapter' },
-                { name: 'NovelId', value: id },
-                { name: 'Title', value: title },
-                { name: 'IsPaid', value: isPaid },
-                { name: 'Price', value: price }
-            ];
-            const output = await window.aoMessage(tags, content);
-            document.getElementById('add-result').textContent = output;
-        });
+            // Add Chapter
+            document.getElementById('add-chapter-btn').addEventListener('click', async () => {
+                if (!window.walletAddress) return alert('Connect wallet first!');
+                const id = document.getElementById('add-novel-id').value;
+                const title = document.getElementById('chapter-title').value;
+                const content = document.getElementById('chapter-content').value;
+                const isPaid = document.getElementById('is-paid').checked ? 'true' : 'false';
+                const price = document.getElementById('chapter-price').value || '0';
+                const tags = [
+                    { name: 'Action', value: 'Add-Chapter' },
+                    { name: 'NovelId', value: id },
+                    { name: 'Title', value: title },
+                    { name: 'IsPaid', value: isPaid },
+                    { name: 'Price', value: price }
+                ];
+                try {
+                    const output = await window.aoMessage(tags, content);
+                    document.getElementById('add-result').textContent = output;
+                } catch (e) {
+                    alert('AO 操作失败: ' + e.message);
+                }
+            });
 
-        // Update Chapter
-        document.getElementById('update-chapter-btn').addEventListener('click', async () => {
-            if (!window.walletAddress) return alert('Connect wallet first!');
-            const id = document.getElementById('update-novel-id').value;
-            const index = document.getElementById('chapter-index').value;
-            const content = document.getElementById('new-content').value;
-            const tags = [
-                { name: 'Action', value: 'Update-Chapter' },
-                { name: 'NovelId', value: id },
-                { name: 'ChapterIndex', value: index }
-            ];
-            const output = await window.aoMessage(tags, content);
-            document.getElementById('update-result').textContent = output;
-        });
+            // Update Chapter
+            document.getElementById('update-chapter-btn').addEventListener('click', async () => {
+                if (!window.walletAddress) return alert('Connect wallet first!');
+                const id = document.getElementById('update-novel-id').value;
+                const index = document.getElementById('chapter-index').value;
+                const content = document.getElementById('new-content').value;
+                const tags = [
+                    { name: 'Action', value: 'Update-Chapter' },
+                    { name: 'NovelId', value: id },
+                    { name: 'ChapterIndex', value: index }
+                ];
+                try {
+                    const output = await window.aoMessage(tags, content);
+                    document.getElementById('update-result').textContent = output;
+                } catch (e) {
+                    alert('AO 操作失败: ' + e.message);
+                }
+            });
 
-        // Buy Chapter
-        document.getElementById('buy-chapter-btn').addEventListener('click', async () => {
-            if (!window.walletAddress) return alert('Connect wallet first!');
-            const id = document.getElementById('buy-novel-id').value;
-            const index = document.getElementById('buy-chapter-index').value;
-            const tags = [
-                { name: 'Action', value: 'Buy-Chapter' },
-                { name: 'NovelId', value: id },
-                { name: 'ChapterIndex', value: index }
-            ];
-            const output = await window.aoMessage(tags);
-            document.getElementById('buy-result').textContent = output;
-        });
+            // Buy Chapter
+            document.getElementById('buy-chapter-btn').addEventListener('click', async () => {
+                if (!window.walletAddress) return alert('Connect wallet first!');
+                const id = document.getElementById('buy-novel-id').value;
+                const index = document.getElementById('buy-chapter-index').value;
+                const tags = [
+                    { name: 'Action', value: 'Buy-Chapter' },
+                    { name: 'NovelId', value: id },
+                    { name: 'ChapterIndex', value: index }
+                ];
+                try {
+                    const output = await window.aoMessage(tags);
+                    document.getElementById('buy-result').textContent = output;
+                } catch (e) {
+                    alert('AO 操作失败: ' + e.message);
+                }
+            });
 
-        // Read Chapter
-        document.getElementById('read-chapter-btn').addEventListener('click', async () => {
-            const id = document.getElementById('read-novel-id').value;
-            const index = document.getElementById('read-chapter-index').value;
-            const tags = [
-                { name: 'Action', value: 'Read-Chapter' },
-                { name: 'NovelId', value: id },
-                { name: 'ChapterIndex', value: index }
-            ];
-            const output = await window.aoDryrun(tags);
-            document.getElementById('read-result').textContent = output;
-        });
+            // Read Chapter
+            document.getElementById('read-chapter-btn').addEventListener('click', async () => {
+                const id = document.getElementById('read-novel-id').value;
+                const index = document.getElementById('read-chapter-index').value;
+                const tags = [
+                    { name: 'Action', value: 'Read-Chapter' },
+                    { name: 'NovelId', value: id },
+                    { name: 'ChapterIndex', value: index }
+                ];
+                try {
+                    const output = await window.aoDryrun(tags);
+                    document.getElementById('read-result').textContent = output;
+                } catch (e) {
+                    alert('AO 操作失败: ' + e.message);
+                }
+            });
 
-        // Get Earnings
-        document.getElementById('get-earnings-btn').addEventListener('click', async () => {
-            const tags = [{ name: 'Action', value: 'Get-Earnings' }];
-            const output = await window.aoDryrun(tags);
-            document.getElementById('earnings-result').textContent = output;
+            // Get Earnings
+            document.getElementById('get-earnings-btn').addEventListener('click', async () => {
+                const tags = [{ name: 'Action', value: 'Get-Earnings' }];
+                try {
+                    const output = await window.aoDryrun(tags);
+                    document.getElementById('earnings-result').textContent = output;
+                } catch (e) {
+                    alert('AO 操作失败: ' + e.message);
+                }
+            });
         });
     </script>
 </body>
