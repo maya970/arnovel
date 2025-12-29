@@ -6,66 +6,82 @@
     <title>AO 小说平台 - 首页</title>
     <script src="https://unpkg.com/@permaweb/aoconnect/dist/browser.js"></script>
     <style>
-        body { font-family: Arial, sans-serif; margin: 20px; background: #f6ffed; }
-        .container { max-width: 1000px; margin: auto; }
+        /* 保持绿色阅读风格 */
+        body { font-family: Arial, sans-serif; margin: 0; padding: 20px; background: #f6ffed; }
+        .container { max-width: 1200px; margin: auto; }
         h1 { text-align: center; color: #389e0d; }
-        input[type="text"] { width: 100%; padding: 12px; margin: 20px 0; border-radius: 8px; border: 1px solid #b7eb8f; }
-        .novel-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; }
-        .novel-card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); border: 1px solid #b7eb8f; }
-        .novel-card h3 { margin: 0; color: #389e0d; }
-        .novel-card a { color: #389e0d; text-decoration: none; font-weight: bold; }
+        #search { width: 100%; padding: 15px; font-size: 18px; border-radius: 8px; border: 1px solid #b7eb8f; margin-bottom: 20px; }
+        .novel-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; }
+        .novel-card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); border: 1px solid #b7eb8f; }
+        .novel-card h3 { margin: 0 0 10px; color: #389e0d; }
+        .novel-card a { color: #389e0d; font-weight: bold; text-decoration: none; }
         .novel-card a:hover { text-decoration: underline; }
-        .update-time { font-size: 0.9em; color: #666; }
+        .wallet { text-align: center; margin: 20px 0; padding: 10px; background: #d9f7be; border-radius: 8px; }
     </style>
 </head>
 <body>
     <div class="container">
         <h1>📚 AO 小说平台</h1>
-        <input type="text" id="search" placeholder="搜索小说标题或简介..." />
-        <div id="novel-list" class="novel-list"></div>
+        <div class="wallet">
+            <button id="connect-wallet">连接钱包（付费章节需用）</button>
+            <span>地址: <span id="wallet-address">未连接</span></span>
+        </div>
+        <input type="text" id="search" placeholder="搜索标题或简介..." />
+        <div id="novel-grid" class="novel-grid"></div>
     </div>
 
     <script>
-        const { dryrun } = window.aoconnect;
+        const { dryrun, createDataItemSigner } = window.aoconnect;
         const PROCESS_ID = "51tMVLxBazWMBT9NhfaCuDP3HjQfZOggIcT7l9mRrbw";
+        let signer = null;
+
+        async function checkWallet() {
+            if (!window.arweaveWallet) return;
+            try {
+                const addr = await window.arweaveWallet.getActiveAddress();
+                if (addr) {
+                    signer = createDataItemSigner(window.arweaveWallet);
+                    document.getElementById('wallet-address').textContent = addr.slice(0,6)+'...'+addr.slice(-4);
+                    document.getElementById('connect-wallet').textContent = '已连接';
+                    document.getElementById('connect-wallet').disabled = true;
+                }
+            } catch {}
+        }
+
+        document.getElementById('connect-wallet').onclick = async () => {
+            if (!window.arweaveWallet) return alert('未安装Wander扩展');
+            try {
+                await window.arweaveWallet.connect(['ACCESS_ADDRESS', 'SIGN_TRANSACTION', 'SIGNATURE']);
+                await checkWallet();
+            } catch (e) { alert('连接失败: ' + e.message); }
+        };
 
         async function loadNovels() {
             try {
-                const res = await dryrun({ process: PROCESS_ID, tags: [{name: 'Action', value: 'List-Novels'}] });
-                let novels = [];
-                try { novels = JSON.parse(res.Messages[0].Data); } catch {} 
-                if (!Array.isArray(novels)) novels = [];
+                const res = await dryrun({ process: PROCESS_ID, tags: [{name:'Action',value:'List-Novels'}] });
+                let novels = JSON.parse(res.Messages[0].Data || '[]');
+                novels.sort((a,b) => (b.LastUpdate || 0) - (a.LastUpdate || 0)); // 新更新在前（假设有LastUpdate字段）
 
-                // 假设进程返回有 LastUpdate 字段，按时间倒序（新更新在前）
-                novels.sort((a, b) => (b.LastUpdate || 0) - (a.LastUpdate || 0));
-
-                const listEl = document.getElementById('novel-list');
-                listEl.innerHTML = '';
-                novels.forEach(novel => {
+                const grid = document.getElementById('novel-grid');
+                grid.innerHTML = '';
+                novels.forEach(n => {
                     const card = document.createElement('div');
                     card.className = 'novel-card';
-                    card.innerHTML = `
-                        <h3>${novel.Title || '无标题'}</h3>
-                        <p>${novel.Description || '无简介'}</p>
-                        <p class="update-time">最后更新: ${novel.LastUpdate ? new Date(novel.LastUpdate * 1000).toLocaleString() : '未知'}</p>
-                        <a href="novel.html?id=${novel.Id}">查看详情 →</a>
-                    `;
-                    listEl.appendChild(card);
+                    card.innerHTML = `<h3>${n.Title}</h3><p>${n.Description}</p>
+                        <a href="novel.html?id=${n.Id}">查看详情 →</a>`;
+                    grid.appendChild(card);
                 });
-            } catch (e) {
-                document.getElementById('novel-list').innerHTML = '<p>加载失败: ' + e.message + '</p>';
-            }
+            } catch (e) { document.getElementById('novel-grid').innerHTML = '加载失败'; }
         }
 
-        // 搜索过滤（客户端）
-        document.getElementById('search').addEventListener('input', (e) => {
+        document.getElementById('search').addEventListener('input', e => {
             const term = e.target.value.toLowerCase();
             document.querySelectorAll('.novel-card').forEach(card => {
-                const text = card.textContent.toLowerCase();
-                card.style.display = text.includes(term) ? 'block' : 'none';
+                card.style.display = card.textContent.toLowerCase().includes(term) ? 'block' : 'none';
             });
         });
 
+        checkWallet();
         loadNovels();
     </script>
 </body>
