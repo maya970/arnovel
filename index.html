@@ -4,46 +4,67 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Novel Platform Frontend</title>
-    <script src="https://unpkg.com/@permaweb/aoconnect/dist/browser.js"></script>
-    <!-- Latest -->
-<script src="https://unpkg.com/arweave/bundles/web.bundle.js"></script>
 
-<!-- Latest, minified-->
-<script src="https://unpkg.com/arweave/bundles/web.bundle.min.js"></script>
+    <!-- Arweave Wallet 支持（用于签名） -->
+    <script src="https://unpkg.com/arweave/bundles/web.bundle.min.js"></script>
 
-<!-- Specific version -->
-<script src="https://unpkg.com/arweave@1.2.0/bundles/web.bundle.js"></script>
-
-<!-- Specific version, minified -->
-<script src="https://unpkg.com/arweave@1.2.0/bundles/web.bundle.min.js"></script>
-    <script src="common.js"></script> 
     <style>
-        body { font-family: Arial, sans-serif; margin: 20px; }
-        section { margin-bottom: 20px; }
-        button { margin-right: 10px; }
-        input, textarea { display: block; margin-bottom: 10px; }
-        pre { background: #f4f4f4; padding: 10px; overflow: auto; }
+        body { font-family: Arial, sans-serif; margin: 20px; background: #f9f9f9; }
+        h1 { color: #333; }
+        section { 
+            background: white; 
+            padding: 20px; 
+            margin-bottom: 30px; 
+            border-radius: 8px; 
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1); 
+        }
+        button { 
+            padding: 10px 15px; 
+            background: #007bff; 
+            color: white; 
+            border: none; 
+            border-radius: 4px; 
+            cursor: pointer; 
+        }
+        button:hover { background: #0056b3; }
+        input, textarea { 
+            width: 100%; 
+            padding: 8px; 
+            margin-bottom: 10px; 
+            border: 1px solid #ccc; 
+            border-radius: 4px; 
+            box-sizing: border-box; 
+        }
+        pre { 
+            background: #f4f4f4; 
+            padding: 15px; 
+            border-radius: 4px; 
+            overflow: auto; 
+            max-height: 400px; 
+            white-space: pre-wrap; 
+        }
+        label { display: block; margin: 10px 0 5px; }
     </style>
 </head>
 <body>
-    <h1>Novel Platform</h1>
+    <h1>Novel Platform on AO</h1>
 
     <section id="wallet-section">
-        <button id="connect-wallet">Connect Wallet (Wander)</button>
+        <button id="connect-wallet">Connect Wallet (ArConnect / Wander)</button>
         <p>Wallet Address: <span id="wallet-address">Not connected</span></p>
     </section>
 
     <section id="create-novel">
         <h2>Create Novel</h2>
         <input id="novel-title" placeholder="Title" />
-        <textarea id="novel-description" placeholder="Description"></textarea>
-        <button id="create-novel-btn">Create</button>
+        <textarea id="novel-description" placeholder="Description" rows="3"></textarea>
+        <button id="create-novel-btn">Create Novel</button>
         <pre id="create-result"></pre>
     </section>
 
     <section id="list-novels">
-        <h2>List Novels</h2>
-        <button id="list-novels-btn">List All Novels</button>
+        <h2>List All Novels</h2>
+        <button id="list-novels-btn">List Novels</button>
         <pre id="list-result"></pre>
     </section>
 
@@ -58,89 +79,123 @@
         <h2>Add Chapter (Author Only)</h2>
         <input id="add-novel-id" placeholder="Novel ID" />
         <input id="chapter-title" placeholder="Chapter Title" />
-        <textarea id="chapter-content" placeholder="Content"></textarea>
-        <label>Is Paid: <input type="checkbox" id="is-paid" /></label>
-        <input id="chapter-price" placeholder="Custom Price (optional)" type="number" />
-        <button id="add-chapter-btn">Add</button>
+        <textarea id="chapter-content" placeholder="Chapter Content" rows="8"></textarea>
+        <label><input type="checkbox" id="is-paid" /> Is Paid Chapter</label>
+        <input id="chapter-price" placeholder="Price in AR (optional, default free if unchecked)" type="number" step="0.000000000001" />
+        <button id="add-chapter-btn">Add Chapter</button>
         <pre id="add-result"></pre>
     </section>
 
     <section id="update-chapter">
         <h2>Update Chapter (Author Only)</h2>
         <input id="update-novel-id" placeholder="Novel ID" />
-        <input id="chapter-index" placeholder="Chapter Index (1-based)" type="number" />
-        <textarea id="new-content" placeholder="New Content"></textarea>
-        <button id="update-chapter-btn">Update</button>
+        <input id="chapter-index" placeholder="Chapter Index (1-based)" type="number" min="1" />
+        <textarea id="new-content" placeholder="New Chapter Content" rows="8"></textarea>
+        <button id="update-chapter-btn">Update Chapter</button>
         <pre id="update-result"></pre>
     </section>
 
     <section id="buy-chapter">
-        <h2>Buy Chapter</h2>
+        <h2>Buy Paid Chapter</h2>
         <input id="buy-novel-id" placeholder="Novel ID" />
-        <input id="buy-chapter-index" placeholder="Chapter Index" type="number" />
-        <button id="buy-chapter-btn">Buy</button>
+        <input id="buy-chapter-index" placeholder="Chapter Index (1-based)" type="number" min="1" />
+        <button id="buy-chapter-btn">Buy Chapter</button>
         <pre id="buy-result"></pre>
     </section>
 
     <section id="read-chapter">
         <h2>Read Chapter</h2>
         <input id="read-novel-id" placeholder="Novel ID" />
-        <input id="read-chapter-index" placeholder="Chapter Index" type="number" />
-        <button id="read-chapter-btn">Read</button>
+        <input id="read-chapter-index" placeholder="Chapter Index (1-based)" type="number" min="1" />
+        <button id="read-chapter-btn">Read Chapter</button>
         <pre id="read-result"></pre>
     </section>
 
     <section id="get-earnings">
-        <h2>Get Earnings</h2>
-        <button id="get-earnings-btn">Get My Earnings</button>
+        <h2>Get My Earnings</h2>
+        <button id="get-earnings-btn">Get Earnings</button>
         <pre id="earnings-result"></pre>
     </section>
 
-    <script>
-       // const { createSigner, message, dryrun, result } = window.aoconnect;
-        const PROCESS_ID = "YOUR_AO_PROCESS_ID_HERE"; // Replace with actual process ID
+    <!-- 主脚本：使用 type="module" 正确导入 aoconnect -->
+    <script type="module">
+        import { createSigner, message, dryrun, result } from 
+            'https://unpkg.com/@permaweb/aoconnect/dist/browser.js';
+
+        // 请替换成你的实际 AO 进程 ID
+        const PROCESS_ID = "YOUR_AO_PROCESS_ID_HERE";  
+
         let walletAddress = null;
 
-        // Connect Wallet
+        // 连接钱包
         document.getElementById('connect-wallet').addEventListener('click', async () => {
             try {
-                await window.arweaveWallet.connect(['ACCESS_ADDRESS', 'SIGN_TRANSACTION']);
+                // 请求权限
+                await window.arweaveWallet.connect([
+                    'ACCESS_ADDRESS',
+                    'SIGN_TRANSACTION',
+                    'DISPATCH'  // AO 需要 DISPATCH 权限发送消息
+                ]);
+
                 walletAddress = await window.arweaveWallet.getActiveAddress();
                 document.getElementById('wallet-address').textContent = walletAddress;
+                alert('Wallet connected successfully!');
             } catch (error) {
-                alert('Failed to connect wallet: ' + error.message);
+                console.error(error);
+                alert('Wallet connection failed: ' + error.message);
             }
         });
 
-        // Helper to send message (for mutations)
+        // 发送写操作（需要签名）
         async function sendAOAction(action, tags = [], data = '') {
             if (!walletAddress) {
-                alert('Connect wallet first!');
-                return null;
+                alert('Please connect wallet first!');
+                return 'Error: Wallet not connected';
             }
-            const msgId = await message({
-                process: PROCESS_ID,
-                tags: [{ name: 'Action', value: action }, ...tags],
-                data: data,
-                signer: createSigner(window.arweaveWallet)
-            });
-            const res = await result({ message: msgId, process: PROCESS_ID });
-            return res.Output?.data?.output || JSON.stringify(res.Messages) || 'Error: ' + res.Error;
+
+            try {
+                const msgId = await message({
+                    process: PROCESS_ID,
+                    tags: [{ name: 'Action', value: action }, ...tags],
+                    data: data,
+                    signer: createSigner(window.arweaveWallet)
+                });
+
+                // 等待结果（可选）
+                const res = await result({
+                    message: msgId,
+                    process: PROCESS_ID
+                });
+
+                return JSON.stringify(res, null, 2);
+            } catch (err) {
+                console.error(err);
+                return 'Error: ' + err.message;
+            }
         }
 
-        // Helper for dryrun (for queries)
+        // 查询读操作（dryrun，不需要签名）
         async function queryAOAction(action, tags = []) {
-            const res = await dryrun({
-                process: PROCESS_ID,
-                tags: [{ name: 'Action', value: action }, ...tags]
-            });
-            return res.Messages[0]?.Data || JSON.stringify(res.Messages) || 'Error';
+            try {
+                const res = await dryrun({
+                    process: PROCESS_ID,
+                    tags: [{ name: 'Action', value: action }, ...tags]
+                });
+
+                // 通常第一个 Message 的 Data 是返回内容
+                return res.Messages[0]?.Data || JSON.stringify(res, null, 2);
+            } catch (err) {
+                console.error(err);
+                return 'Error: ' + err.message;
+            }
         }
 
-        // Create Novel
+        // 创建小说
         document.getElementById('create-novel-btn').addEventListener('click', async () => {
-            const title = document.getElementById('novel-title').value;
-            const desc = document.getElementById('novel-description').value;
+            const title = document.getElementById('novel-title').value.trim();
+            const desc = document.getElementById('novel-description').value.trim();
+            if (!title) return alert('Title is required');
+
             const output = await sendAOAction('Create-Novel', [
                 { name: 'Title', value: title },
                 { name: 'Description', value: desc }
@@ -148,70 +203,87 @@
             document.getElementById('create-result').textContent = output;
         });
 
-        // List Novels
+        // 列出所有小说
         document.getElementById('list-novels-btn').addEventListener('click', async () => {
             const output = await queryAOAction('List-Novels');
             document.getElementById('list-result').textContent = output;
         });
 
-        // Get Novel
+        // 获取小说信息
         document.getElementById('get-novel-btn').addEventListener('click', async () => {
-            const id = document.getElementById('novel-id').value;
+            const id = document.getElementById('novel-id').value.trim();
+            if (!id) return alert('Novel ID required');
             const output = await queryAOAction('Get-Novel', [{ name: 'NovelId', value: id }]);
             document.getElementById('novel-result').textContent = output;
         });
 
-        // Add Chapter
+        // 添加章节
         document.getElementById('add-chapter-btn').addEventListener('click', async () => {
-            const id = document.getElementById('add-novel-id').value;
-            const title = document.getElementById('chapter-title').value;
+            const id = document.getElementById('add-novel-id').value.trim();
+            const title = document.getElementById('chapter-title').value.trim();
             const content = document.getElementById('chapter-content').value;
-            const isPaid = document.getElementById('is-paid').checked ? 'true' : 'false';
+            const isPaid = document.getElementById('is-paid').checked;
             const price = document.getElementById('chapter-price').value || '0';
+
+            if (!id || !title) return alert('Novel ID and Chapter Title required');
+
             const output = await sendAOAction('Add-Chapter', [
                 { name: 'NovelId', value: id },
                 { name: 'Title', value: title },
-                { name: 'IsPaid', value: isPaid },
+                { name: 'IsPaid', value: isPaid.toString() },
                 { name: 'Price', value: price }
             ], content);
+
             document.getElementById('add-result').textContent = output;
         });
 
-        // Update Chapter
+        // 更新章节
         document.getElementById('update-chapter-btn').addEventListener('click', async () => {
-            const id = document.getElementById('update-novel-id').value;
+            const id = document.getElementById('update-novel-id').value.trim();
             const index = document.getElementById('chapter-index').value;
             const content = document.getElementById('new-content').value;
+
+            if (!id || !index) return alert('Novel ID and Chapter Index required');
+
             const output = await sendAOAction('Update-Chapter', [
                 { name: 'NovelId', value: id },
                 { name: 'ChapterIndex', value: index }
             ], content);
+
             document.getElementById('update-result').textContent = output;
         });
 
-        // Buy Chapter
+        // 购买章节
         document.getElementById('buy-chapter-btn').addEventListener('click', async () => {
-            const id = document.getElementById('buy-novel-id').value;
+            const id = document.getElementById('buy-novel-id').value.trim();
             const index = document.getElementById('buy-chapter-index').value;
+
+            if (!id || !index) return alert('Novel ID and Chapter Index required');
+
             const output = await sendAOAction('Buy-Chapter', [
                 { name: 'NovelId', value: id },
                 { name: 'ChapterIndex', value: index }
             ]);
+
             document.getElementById('buy-result').textContent = output;
         });
 
-        // Read Chapter
+        // 阅读章节
         document.getElementById('read-chapter-btn').addEventListener('click', async () => {
-            const id = document.getElementById('read-novel-id').value;
+            const id = document.getElementById('read-novel-id').value.trim();
             const index = document.getElementById('read-chapter-index').value;
+
+            if (!id || !index) return alert('Novel ID and Chapter Index required');
+
             const output = await queryAOAction('Read-Chapter', [
                 { name: 'NovelId', value: id },
                 { name: 'ChapterIndex', value: index }
             ]);
+
             document.getElementById('read-result').textContent = output;
         });
 
-        // Get Earnings
+        // 获取收益
         document.getElementById('get-earnings-btn').addEventListener('click', async () => {
             const output = await queryAOAction('Get-Earnings');
             document.getElementById('earnings-result').textContent = output;
