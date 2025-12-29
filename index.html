@@ -10,18 +10,19 @@
     <div class="container">
         <header>
             <h1>📚 AO小说平台</h1>
-            <p>永久存储 · 作者直营</p>
+            <p>基于Permaweb永久存储 · 支持付费章节</p>
         </header>
 
-        <div style="text-align:center; margin-bottom:24px;">
-            <button id="connect-wallet">连接钱包</button>
-            <span style="margin-left:16px;">地址: <span class="wallet-address">未连接</span></span>
-            <a href="author-dashboard.html" style="margin-left:16px; color:white; text-decoration:underline;">作者后台 →</a>
+        <div class="wallet-section">
+            <h2>💳 钱包连接</h2>
+            <button id="connect-wallet">连接Wander钱包</button>
+            <p>钱包地址: <span class="wallet-address status-disconnected">未连接</span></p>
+            <a href="author-dashboard.html" style="color:#667eea; text-decoration:underline;">→ 作者后台</a>
         </div>
 
         <h2>📋 小说列表</h2>
-        <button id="refresh-list">刷新列表</button>
-        <div id="novels-list" style="margin-top:16px;"></div>
+        <button id="refresh-list">🔍 刷新列表</button>
+        <div id="novels-list" style="margin-top:20px;"></div>
     </div>
 
     <script type="module" src="common.js"></script>
@@ -29,6 +30,7 @@
         import { connectWallet, listAllNovels } from "./common.js";
 
         document.getElementById('connect-wallet').addEventListener('click', connectWallet);
+
         document.getElementById('refresh-list').addEventListener('click', async () => {
             const btn = document.getElementById('refresh-list');
             btn.disabled = true; btn.classList.add('loading');
@@ -36,25 +38,29 @@
                 const novels = await listAllNovels();
                 const container = document.getElementById('novels-list');
                 container.innerHTML = '';
+                if (novels.length === 0) {
+                    container.innerHTML = '<p>暂无小说</p>';
+                    return;
+                }
                 novels.forEach(novel => {
                     const card = document.createElement('div');
                     card.className = 'novel-card';
                     card.innerHTML = `
-                        <h3>${novel.title}</h3>
-                        <p>${novel.description.slice(0,120)}...</p>
-                        <small>作者: ${novel.author.slice(0,10)}... • 章节: ${novel.chapters?.length || 0}</small>
+                        <h3>${novel.title || '无标题'}</h3>
+                        <p>${(novel.description || '').slice(0,150)}...</p>
+                        <small>作者: ${novel.author?.slice(0,10)}... • 章节数: ${novel.chapters?.length || 0}</small>
                     `;
                     card.onclick = () => location.href = `novel.html?id=${novel.id}`;
                     container.appendChild(card);
                 });
             } catch (e) {
-                alert("加载失败: " + e.message);
+                alert('加载失败: ' + e.message);
             } finally {
                 btn.disabled = false; btn.classList.remove('loading');
             }
         });
 
-        // 页面加载自动刷新
+        // 自动刷新
         document.getElementById('refresh-list').click();
     </script>
 </body>
