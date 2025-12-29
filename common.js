@@ -1,3 +1,4 @@
+// AO 进程 ID
 const PROCESS_ID = "51tMVLxBazWMBT9NhfaCuDP3HjQfZOggIcT7l9mRrbw";
 window.PROCESS_ID = PROCESS_ID;
 
@@ -5,79 +6,90 @@ let walletAddress = null;
 window.walletAddress = null;
 let signer = null;
 
+// 更新页面上所有地址显示
 function updateWalletDisplay(addr) {
     walletAddress = addr;
     window.walletAddress = addr;
-    const elements = document.querySelectorAll('.wallet-address, #connect-wallet');
-    elements.forEach(el => {
-        el.textContent = addr ? addr.slice(0, 6) + '...' + addr.slice(-4) : 'Connect Wallet (Wander)';
+    document.querySelectorAll('.wallet-address, #connect-wallet').forEach(el => {
         if (addr) {
+            el.textContent = addr.slice(0, 6) + '...' + addr.slice(-4);
             el.classList.add('text-green-600');
-            el.classList.remove('hover:bg-slate-800', 'bg-slate-900');
+        } else {
+            el.textContent = '连接钱包 (Wander)';
         }
     });
 }
 
-window.connectWallet = async function() {
-    console.log("[DEBUG] Starting wallet connection...");
+// 全局连接函数
+window.connectWallet = async function () {
+    console.log("[Wander] 开始连接钱包...");
+
     if (!window.arweaveWallet) {
-        console.error("[ERROR] Wander extension not detected.");
-        alert("未检测到 Wander 钱包扩展！请确保安装最新版[](https://www.wander.app/download)，登录钱包，刷新页面 (Ctrl+Shift+R)。如果仍无效，重启浏览器或检查扩展权限。");
+        alert("未检测到 Wander 钱包扩展！\n\n请确保：\n1. 已安装最新版 Wander（https://www.wander.app/download）\n2. 已登录并解锁钱包（输入密码）\n3. 刷新页面（Ctrl+Shift+R）");
         return false;
     }
 
     try {
-        console.log("[DEBUG] Calling connect...");
+        // 请求必要权限
         await window.arweaveWallet.connect(['ACCESS_ADDRESS', 'SIGN_TRANSACTION', 'SIGNATURE']);
+
         const addr = await window.arweaveWallet.getActiveAddress();
         updateWalletDisplay(addr);
-        signer = window.aoconnect.createDataItemSigner(window.arweaveWallet);  // Use aoconnect from browser bundle
-        console.log("[SUCCESS] Connected:", addr);
-        alert("钱包连接成功！");
+
+        // 使用 browser bundle 提供的 createDataItemSigner
+        signer = window.aoconnect.createDataItemSigner(window.arweaveWallet);
+
+        console.log("[Wander] 连接成功:", addr);
+        alert("钱包连接成功！\n地址: " + addr);
         return true;
     } catch (err) {
-        console.error("[ERROR] Failed:", err);
-        alert("连接失败！请在 Wander 扩展中检查：1. 是否已登录/解锁钱包（输入密码）；2. 批准本网站权限；3. 无扩展冲突。错误: " + err.message + "\n尝试 Ctrl+Shift+R 刷新，或隐身模式测试。");
+        console.error("[Wander] 连接失败:", err);
+        alert("连接失败！\n\n常见原因：\n1. Wander 扩展未解锁（请点击扩展图标输入密码）\n2. 未批准本站权限\n3. 浏览器缓存问题（尝试隐身模式）\n\n错误信息：" + err.message);
         return false;
     }
 };
 
-window.aoDryrun = async (tags, owner = walletAddress) => {
-    if (!window.aoconnect) throw new Error('aoconnect 未加载 - 请检查网络，刷新页面。');
+// Dryrun 查询（读取操作）
+window.aoDryrun = async function (tags, owner = walletAddress) {
+    if (!window.aoconnect) throw new Error("aoconnect 未加载，请刷新页面");
     try {
         const res = await window.aoconnect.dryrun({ process: PROCESS_ID, tags, owner });
-        return res.Messages?.[0]?.Data || res.Output || JSON.stringify(res) || 'Error';
+        return res.Messages?.[0]?.Data || res.Output?.data?.output || JSON.stringify(res, null, 2) || '无返回数据';
     } catch (e) {
-        throw new Error('Dryrun 失败: ' + e.message);
+        throw new Error("查询失败: " + e.message);
     }
 };
 
-window.aoMessage = async (tags, data = '') => {
+// 发送消息（写操作，需要签名）
+window.aoMessage = async function (tags, data = '') {
     if (!signer) throw new Error("请先连接钱包");
-    if (!window.aoconnect) throw new Error('aoconnect 未加载 - 请检查网络，刷新页面。');
+    if (!window.aoconnect) throw new Error("aoconnect 未加载，请刷新页面");
     try {
-        const msgId = await window.aoconnect.message({ process: PROCESS_ID, signer, tags, data });
+        const msgId = await window.aoconnect.message({
+            process: PROCESS_ID,
+            signer,
+            tags,
+            data
+        });
         const res = await window.aoconnect.result({ message: msgId, process: PROCESS_ID });
-        return res.Output || res.Messages?.[0]?.Data || JSON.stringify(res) || res.Error || 'Error';
+        return res.Output?.data?.output || res.Messages?.[0]?.Data || JSON.stringify(res, null, 2) || '操作成功（无详细返回）';
     } catch (e) {
-        throw new Error('Message 失败: ' + e.message);
+        throw new Error("操作失败: " + e.message);
     }
 };
 
+// 页面加载时尝试自动连接（如果已有会话）
 window.addEventListener('load', async () => {
-    console.log("[DEBUG] Checking wallet session...");
     if (window.arweaveWallet) {
         try {
             const addr = await window.arweaveWallet.getActiveAddress();
             if (addr) {
                 updateWalletDisplay(addr);
                 signer = window.aoconnect.createDataItemSigner(window.arweaveWallet);
-                console.log("[SUCCESS] Auto-connected:", addr);
+                console.log("[Wander] 自动连接成功:", addr);
             }
         } catch (e) {
-            console.log("[INFO] No active session - 请解锁钱包。");
+            console.log("[Wander] 无活跃会话，需要手动连接");
         }
-    } else {
-        console.warn("[WARN] No wallet detected.");
     }
 });
