@@ -1,222 +1,95 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Novel Platform Frontend</title>
-    <!-- Browser bundle for aoconnect (bundles all deps, avoids module errors) -->
-    <script src="https://unpkg.com/@permaweb/aoconnect/dist/browser.js"></script>
-    <!-- common.js (no type="module" now) -->
-    <script src="common.js"></script>
-    <style>
-        body { font-family: Arial, sans-serif; margin: 20px; }
-        section { margin-bottom: 20px; }
-        button { margin-right: 10px; }
-        input, textarea { display: block; margin-bottom: 10px; }
-        pre { background: #f4f4f4; padding: 10px; overflow: auto; }
-    </style>
-</head>
-<body>
-    <h1>Novel Platform</h1>
-    <section id="wallet-section">
-        <button id="connect-wallet">Connect Wallet (Wander)</button>
-        <p>Wallet Address: <span id="wallet-address" class="wallet-address">Not connected</span></p>
-    </section>
-    <section id="create-novel">
-        <h2>Create Novel</h2>
-        <input id="novel-title" placeholder="Title" />
-        <textarea id="novel-description" placeholder="Description"></textarea>
-        <button id="create-novel-btn">Create</button>
-        <pre id="create-result"></pre>
-    </section>
-    <section id="list-novels">
-        <h2>List Novels</h2>
-        <button id="list-novels-btn">List All Novels</button>
-        <pre id="list-result"></pre>
-    </section>
-    <section id="get-novel">
-        <h2>Get Novel Info</h2>
-        <input id="novel-id" placeholder="Novel ID" />
-        <button id="get-novel-btn">Get Info</button>
-        <pre id="novel-result"></pre>
-    </section>
-    <section id="add-chapter">
-        <h2>Add Chapter (Author Only)</h2>
-        <input id="add-novel-id" placeholder="Novel ID" />
-        <input id="chapter-title" placeholder="Chapter Title" />
-        <textarea id="chapter-content" placeholder="Content"></textarea>
-        <label>Is Paid: <input type="checkbox" id="is-paid" /></label>
-        <input id="chapter-price" placeholder="Custom Price (optional)" type="number" />
-        <button id="add-chapter-btn">Add</button>
-        <pre id="add-result"></pre>
-    </section>
-    <section id="update-chapter">
-        <h2>Update Chapter (Author Only)</h2>
-        <input id="update-novel-id" placeholder="Novel ID" />
-        <input id="chapter-index" placeholder="Chapter Index (1-based)" type="number" />
-        <textarea id="new-content" placeholder="New Content"></textarea>
-        <button id="update-chapter-btn">Update</button>
-        <pre id="update-result"></pre>
-    </section>
-    <section id="buy-chapter">
-        <h2>Buy Chapter</h2>
-        <input id="buy-novel-id" placeholder="Novel ID" />
-        <input id="buy-chapter-index" placeholder="Chapter Index" type="number" />
-        <button id="buy-chapter-btn">Buy</button>
-        <pre id="buy-result"></pre>
-    </section>
-    <section id="read-chapter">
-        <h2>Read Chapter</h2>
-        <input id="read-novel-id" placeholder="Novel ID" />
-        <input id="read-chapter-index" placeholder="Chapter Index" type="number" />
-        <button id="read-chapter-btn">Read</button>
-        <pre id="read-result"></pre>
-    </section>
-    <section id="get-earnings">
-        <h2>Get Earnings</h2>
-        <button id="get-earnings-btn">Get My Earnings</button>
-        <pre id="earnings-result"></pre>
-    </section>
-    <script>
-        window.addEventListener('load', () => {
-            if (!window.connectWallet) {
-                alert('common.js 未加载成功 - 请检查网络，尝试 Ctrl+Shift+R 刷新。');
-                return;
-            }
-            document.getElementById('connect-wallet').addEventListener('click', window.connectWallet);
+// AO 进程 ID
+const PROCESS_ID = "51tMVLxBazWMBT9NhfaCuDP3HjQfZOggIcT7l9mRrbw";
+window.PROCESS_ID = PROCESS_ID;
 
-            // Create Novel
-            document.getElementById('create-novel-btn').addEventListener('click', async () => {
-                if (!window.walletAddress) return alert('请先连接钱包!');
-                const title = document.getElementById('novel-title').value;
-                const desc = document.getElementById('novel-description').value;
-                const tags = [
-                    { name: 'Action', value: 'Create-Novel' },
-                    { name: 'Title', value: title },
-                    { name: 'Description', value: desc }
-                ];
-                try {
-                    const output = await window.aoMessage(tags);
-                    document.getElementById('create-result').textContent = output;
-                } catch (e) {
-                    alert('AO 操作失败: ' + e.message);
-                }
-            });
+let walletAddress = null;
+window.walletAddress = null;
+let signer = null;
 
-            // List Novels
-            document.getElementById('list-novels-btn').addEventListener('click', async () => {
-                const tags = [{ name: 'Action', value: 'List-Novels' }];
-                try {
-                    const output = await window.aoDryrun(tags);
-                    document.getElementById('list-result').textContent = output;
-                } catch (e) {
-                    alert('AO 操作失败: ' + e.message);
-                }
-            });
+// 更新页面上所有地址显示
+function updateWalletDisplay(addr) {
+    walletAddress = addr;
+    window.walletAddress = addr;
+    document.querySelectorAll('.wallet-address, #connect-wallet').forEach(el => {
+        if (addr) {
+            el.textContent = addr.slice(0, 6) + '...' + addr.slice(-4);
+            el.classList.add('text-green-600');
+        } else {
+            el.textContent = '连接钱包 (Wander)';
+        }
+    });
+}
 
-            // Get Novel
-            document.getElementById('get-novel-btn').addEventListener('click', async () => {
-                const id = document.getElementById('novel-id').value;
-                const tags = [
-                    { name: 'Action', value: 'Get-Novel' },
-                    { name: 'NovelId', value: id }
-                ];
-                try {
-                    const output = await window.aoDryrun(tags);
-                    document.getElementById('novel-result').textContent = output;
-                } catch (e) {
-                    alert('AO 操作失败: ' + e.message);
-                }
-            });
+// 全局连接函数
+window.connectWallet = async function () {
+    console.log("[Wander] 开始连接钱包...");
 
-            // Add Chapter
-            document.getElementById('add-chapter-btn').addEventListener('click', async () => {
-                if (!window.walletAddress) return alert('请先连接钱包!');
-                const id = document.getElementById('add-novel-id').value;
-                const title = document.getElementById('chapter-title').value;
-                const content = document.getElementById('chapter-content').value;
-                const isPaid = document.getElementById('is-paid').checked ? 'true' : 'false';
-                const price = document.getElementById('chapter-price').value || '0';
-                const tags = [
-                    { name: 'Action', value: 'Add-Chapter' },
-                    { name: 'NovelId', value: id },
-                    { name: 'Title', value: title },
-                    { name: 'IsPaid', value: isPaid },
-                    { name: 'Price', value: price }
-                ];
-                try {
-                    const output = await window.aoMessage(tags, content);
-                    document.getElementById('add-result').textContent = output;
-                } catch (e) {
-                    alert('AO 操作失败: ' + e.message);
-                }
-            });
+    if (!window.arweaveWallet) {
+        alert("未检测到 Wander 钱包扩展！\n\n请确保：\n1. 已安装最新版 Wander（https://www.wander.app/download）\n2. 已登录并解锁钱包（输入密码）\n3. 刷新页面（Ctrl+Shift+R）");
+        return false;
+    }
 
-            // Update Chapter
-            document.getElementById('update-chapter-btn').addEventListener('click', async () => {
-                if (!window.walletAddress) return alert('请先连接钱包!');
-                const id = document.getElementById('update-novel-id').value;
-                const index = document.getElementById('chapter-index').value;
-                const content = document.getElementById('new-content').value;
-                const tags = [
-                    { name: 'Action', value: 'Update-Chapter' },
-                    { name: 'NovelId', value: id },
-                    { name: 'ChapterIndex', value: index }
-                ];
-                try {
-                    const output = await window.aoMessage(tags, content);
-                    document.getElementById('update-result').textContent = output;
-                } catch (e) {
-                    alert('AO 操作失败: ' + e.message);
-                }
-            });
+    try {
+        // 请求必要权限
+        await window.arweaveWallet.connect(['ACCESS_ADDRESS', 'SIGN_TRANSACTION', 'SIGNATURE']);
 
-            // Buy Chapter
-            document.getElementById('buy-chapter-btn').addEventListener('click', async () => {
-                if (!window.walletAddress) return alert('请先连接钱包!');
-                const id = document.getElementById('buy-novel-id').value;
-                const index = document.getElementById('buy-chapter-index').value;
-                const tags = [
-                    { name: 'Action', value: 'Buy-Chapter' },
-                    { name: 'NovelId', value: id },
-                    { name: 'ChapterIndex', value: index }
-                ];
-                try {
-                    const output = await window.aoMessage(tags);
-                    document.getElementById('buy-result').textContent = output;
-                } catch (e) {
-                    alert('AO 操作失败: ' + e.message);
-                }
-            });
+        const addr = await window.arweaveWallet.getActiveAddress();
+        updateWalletDisplay(addr);
 
-            // Read Chapter
-            document.getElementById('read-chapter-btn').addEventListener('click', async () => {
-                const id = document.getElementById('read-novel-id').value;
-                const index = document.getElementById('read-chapter-index').value;
-                const tags = [
-                    { name: 'Action', value: 'Read-Chapter' },
-                    { name: 'NovelId', value: id },
-                    { name: 'ChapterIndex', value: index }
-                ];
-                try {
-                    const output = await window.aoDryrun(tags);
-                    document.getElementById('read-result').textContent = output;
-                } catch (e) {
-                    alert('AO 操作失败: ' + e.message);
-                }
-            });
+        // 使用 browser bundle 提供的 createDataItemSigner
+        signer = window.aoconnect.createDataItemSigner(window.arweaveWallet);
 
-            // Get Earnings
-            document.getElementById('get-earnings-btn').addEventListener('click', async () => {
-                const tags = [{ name: 'Action', value: 'Get-Earnings' }];
-                try {
-                    const output = await window.aoDryrun(tags);
-                    document.getElementById('earnings-result').textContent = output;
-                } catch (e) {
-                    alert('AO 操作失败: ' + e.message);
-                }
-            });
+        console.log("[Wander] 连接成功:", addr);
+        alert("钱包连接成功！\n地址: " + addr);
+        return true;
+    } catch (err) {
+        console.error("[Wander] 连接失败:", err);
+        alert("连接失败！\n\n常见原因：\n1. Wander 扩展未解锁（请点击扩展图标输入密码）\n2. 未批准本站权限\n3. 浏览器缓存问题（尝试隐身模式）\n\n错误信息：" + err.message);
+        return false;
+    }
+};
+
+// Dryrun 查询（读取操作）
+window.aoDryrun = async function (tags, owner = walletAddress) {
+    if (!window.aoconnect) throw new Error("aoconnect 未加载，请刷新页面");
+    try {
+        const res = await window.aoconnect.dryrun({ process: PROCESS_ID, tags, owner });
+        return res.Messages?.[0]?.Data || res.Output?.data?.output || JSON.stringify(res, null, 2) || '无返回数据';
+    } catch (e) {
+        throw new Error("查询失败: " + e.message);
+    }
+};
+
+// 发送消息（写操作，需要签名）
+window.aoMessage = async function (tags, data = '') {
+    if (!signer) throw new Error("请先连接钱包");
+    if (!window.aoconnect) throw new Error("aoconnect 未加载，请刷新页面");
+    try {
+        const msgId = await window.aoconnect.message({
+            process: PROCESS_ID,
+            signer,
+            tags,
+            data
         });
-    </script>
-</body>
-</html>
+        const res = await window.aoconnect.result({ message: msgId, process: PROCESS_ID });
+        return res.Output?.data?.output || res.Messages?.[0]?.Data || JSON.stringify(res, null, 2) || '操作成功（无详细返回）';
+    } catch (e) {
+        throw new Error("操作失败: " + e.message);
+    }
+};
+
+// 页面加载时尝试自动连接（如果已有会话）
+window.addEventListener('load', async () => {
+    if (window.arweaveWallet) {
+        try {
+            const addr = await window.arweaveWallet.getActiveAddress();
+            if (addr) {
+                updateWalletDisplay(addr);
+                signer = window.aoconnect.createDataItemSigner(window.arweaveWallet);
+                console.log("[Wander] 自动连接成功:", addr);
+            }
+        } catch (e) {
+            console.log("[Wander] 无活跃会话，需要手动连接");
+        }
+    }
+});
