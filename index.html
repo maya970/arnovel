@@ -4,8 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Novel Platform Frontend</title>
-    <!-- Load common.js as module -->
-    <script type="module" src="common.js"></script>
+    <!-- Browser bundle for aoconnect (bundles all deps, avoids module errors) -->
+    <script src="https://unpkg.com/@permaweb/aoconnect/dist/browser.js"></script>
+    <!-- common.js (no type="module" now) -->
+    <script src="common.js"></script>
     <style>
         body { font-family: Arial, sans-serif; margin: 20px; }
         section { margin-bottom: 20px; }
@@ -20,7 +22,6 @@
         <button id="connect-wallet">Connect Wallet (Wander)</button>
         <p>Wallet Address: <span id="wallet-address" class="wallet-address">Not connected</span></p>
     </section>
-    <!-- Other sections unchanged... -->
     <section id="create-novel">
         <h2>Create Novel</h2>
         <input id="novel-title" placeholder="Title" />
@@ -79,14 +80,14 @@
     <script>
         window.addEventListener('load', () => {
             if (!window.connectWallet) {
-                alert('common.js 未加载成功 - 请检查网络或 unpkg.com 访问，尝试 Ctrl+Shift+R 刷新。');
+                alert('common.js 未加载成功 - 请检查网络，尝试 Ctrl+Shift+R 刷新。');
                 return;
             }
             document.getElementById('connect-wallet').addEventListener('click', window.connectWallet);
 
             // Create Novel
             document.getElementById('create-novel-btn').addEventListener('click', async () => {
-                if (!window.walletAddress) return alert('Connect wallet first!');
+                if (!window.walletAddress) return alert('请先连接钱包!');
                 const title = document.getElementById('novel-title').value;
                 const desc = document.getElementById('novel-description').value;
                 const tags = [
@@ -113,7 +114,6 @@
                 }
             });
 
-            // Other event listeners unchanged, but wrapped in try-catch for better errors...
             // Get Novel
             document.getElementById('get-novel-btn').addEventListener('click', async () => {
                 const id = document.getElementById('novel-id').value;
@@ -131,7 +131,7 @@
 
             // Add Chapter
             document.getElementById('add-chapter-btn').addEventListener('click', async () => {
-                if (!window.walletAddress) return alert('Connect wallet first!');
+                if (!window.walletAddress) return alert('请先连接钱包!');
                 const id = document.getElementById('add-novel-id').value;
                 const title = document.getElementById('chapter-title').value;
                 const content = document.getElementById('chapter-content').value;
@@ -154,7 +154,7 @@
 
             // Update Chapter
             document.getElementById('update-chapter-btn').addEventListener('click', async () => {
-                if (!window.walletAddress) return alert('Connect wallet first!');
+                if (!window.walletAddress) return alert('请先连接钱包!');
                 const id = document.getElementById('update-novel-id').value;
                 const index = document.getElementById('chapter-index').value;
                 const content = document.getElementById('new-content').value;
@@ -173,7 +173,7 @@
 
             // Buy Chapter
             document.getElementById('buy-chapter-btn').addEventListener('click', async () => {
-                if (!window.walletAddress) return alert('Connect wallet first!');
+                if (!window.walletAddress) return alert('请先连接钱包!');
                 const id = document.getElementById('buy-novel-id').value;
                 const index = document.getElementById('buy-chapter-index').value;
                 const tags = [
