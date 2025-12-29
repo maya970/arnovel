@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AO小说平台 - 作者后台</title>
+    <link rel="stylesheet" href="common.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>📚 作者后台</h1>
+            <p>创建小说 · 添加章节 · 查看收益</p>
+        </header>
+
+        <div class="wallet-section">
+            <h2>💳 钱包连接（必须）</h2>
+            <button id="connect-wallet">连接Wander钱包</button>
+            <p>钱包地址: <span class="wallet-address status-disconnected">未连接</span></p>
+        </div>
+
+        <h2>📖 创建小说</h2>
+        <div class="input-group" style="display:flex;flex-direction:column;gap:12px;">
+            <input id="novel-title" placeholder="小说标题（必填）" maxlength="100" />
+            <textarea id="novel-description" placeholder="小说简介（必填）" maxlength="500"></textarea>
+            <button id="create-novel-btn">🚀 创建小说</button>
+        </div>
+        <pre id="create-result">点击创建后显示消息ID，稍后刷新我的小说列表确认</pre>
+
+        <h2>📋 我的小说列表</h2>
+        <button id="my-novels-btn">🔍 刷新我的小说</button>
+        <div id="my-novels-list" style="margin-top:16px;"></div>
+
+        <h2>✨ 添加章节（仅自己的小说）</h2>
+        <div class="input-group" style="display:flex;flex-direction:column;gap:12px;">
+            <input id="add-novel-id" placeholder="小说ID（必填）" />
+            <input id="chapter-title" placeholder="章节标题（必填）" maxlength="100" />
+            <textarea id="chapter-content" placeholder="章节正文内容（必填）" maxlength="10000"></textarea>
+            <label style="display:flex;align-items:center;gap:8px;">
+                <input type="checkbox" id="is-paid" /> 付费章节
+            </label>
+            <input id="chapter-price" type="number" min="0" step="1" placeholder="价格（Credits，默认0免费）" />
+            <button id="add-chapter-btn">📝 添加章节</button>
+        </div>
+        <pre id="add-result">填写完整后点击添加</pre>
+
+        <h2>🔧 更新章节（仅自己的小说）</h2>
+        <div class="input-group" style="display:flex;flex-direction:column;gap:12px;">
+            <input id="update-novel-id" placeholder="小说ID（必填）" />
+            <input id="chapter-index" type="number" min="1" placeholder="章节序号（从1开始，必填）" />
+            <textarea id="new-content" placeholder="新的章节内容（必填）" maxlength="10000"></textarea>
+            <button id="update-chapter-btn">💾 更新章节</button>
+        </div>
+        <pre id="update-result">填写完整后点击更新</pre>
+
+        <h2>💵 我的总收益</h2>
+        <button id="get-earnings-btn">💰 查询收益</button>
+        <pre id="earnings-result">点击查询（显示Credits）</pre>
+    </div>
+
+    <script type="module" src="common.js"></script>
+    <script type="module">
+        import { connectWallet, dryRun, sendMessage, listAllNovels } from "./common.js";
+
+        document.getElementById('connect-wallet').addEventListener('click', connectWallet);
+
+        // 创建小说
+        document.getElementById('create-novel-btn').addEventListener('click', async () => {
+            if (!document.querySelector('.wallet-address').textContent.includes('ao')) return alert('请先连接钱包');
+            const title = document.getElementById('novel-title').value.trim();
+            const desc = document.getElementById('novel-description').value.trim();
+            if (!title || !desc) return alert('标题和简介不能为空');
+
+            const btn = document.getElementById('create-novel-btn');
+            btn.disabled = true; btn.classList.add('loading');
+            try {
+                const tags = [
+                    { name: 'Title', value: title },
+                    { name: 'Description', value: desc }
+                ];
+                const msgId = await sendMessage('Create-Novel', tags);
+                document.getElementById('create-result').textContent = `✅ 消息已发送！ID: ${msgId}\n请稍后刷新我的小说列表确认。`;
+            } catch (e) {
+                document.getElementById('create-result').textContent = `❌ 创建失败: ${e.message}`;
+            } finally {
+                btn.disabled = false; btn.classList.remove('loading');
+            }
+        });
+
+        // 我的小说列表（只显示当前钱包地址创建的小说）
+        document.getElementById('my-novels-btn').addEventListener('click', async () => {
+            const address = document.querySelector('.wallet-address').textContent;
+            if (!address.includes('ao')) return alert('请先连接钱包');
+
+            const btn = document.getElementById('my-novels-btn');
+            btn.disabled = true; btn.classList.add('loading');
+            try {
+                const all = await listAllNovels();
+                const mine = all.filter(n => n.author === address);
+                const container = document.getElementById('my-novels-list');
+                container.innerHTML = '';
+                if (mine.length === 0) {
+                    container.innerHTML = '<p>你还没有创建小说</p>';
+                    return;
+                }
+                mine.forEach(novel => {
+                    const card = document.createElement('div');
+                    card.className = 'novel-card';
+                    card.innerHTML = `
+                        <strong>${novel.title}</strong><br>
+                        ID: ${novel.id}<br>
+                        章节数: ${novel.chapters?.length || 0}
+                    `;
+                    container.appendChild(card);
+                });
+            } catch (e) {
+                alert('加载失败: ' + e.message);
+            } finally {
+                btn.disabled = false; btn.classList.remove('loading');
+            }
+        });
+
+        // 添加章节
+        document.getElementById('add-chapter-btn').addEventListener('click', async () => {
+            if (!document.querySelector('.wallet-address').textContent.includes('ao')) return alert('请先连接钱包');
+            const novelId = document.getElementById('add-novel-id').value.trim();
+            const title = document.getElementById('chapter-title').value.trim();
+            const content = document.getElementById('chapter-content').value.trim();
+            if (!novelId || !title || !content) return alert('小说ID、标题、内容不能为空');
+
+            const btn = document.getElementById('add-chapter-btn');
+            btn.disabled = true; btn.classList.add('loading');
+            try {
+                const tags = [
+                    { name: 'NovelId', value: novelId },
+                    { name: 'Title', value: title },
+                    { name: 'IsPaid', value: document.getElementById('is-paid').checked ? 'true' : 'false' },
+                    { name: 'Price', value: document.getElementById('chapter-price').value || '0' }
+                ];
+                const msgId = await sendMessage('Add-Chapter', tags, content);
+                document.getElementById('add-result').textContent = `✅ 消息已发送！ID: ${msgId}`;
+            } catch (e) {
+                document.getElementById('add-result').textContent = `❌ 添加失败: ${e.message}`;
+            } finally {
+                btn.disabled = false; btn.classList.remove('loading');
+            }
+        });
+
+        // 更新章节
+        document.getElementById('update-chapter-btn').addEventListener('click', async () => {
+            if (!document.querySelector('.wallet-address').textContent.includes('ao')) return alert('请先连接钱包');
+            const novelId = document.getElementById('update-novel-id').value.trim();
+            const index = document.getElementById('chapter-index').value.trim();
+            const content = document.getElementById('new-content').value.trim();
+            if (!novelId || !index || !content) return alert('所有字段不能为空');
+
+            const btn = document.getElementById('update-chapter-btn');
+            btn.disabled = true; btn.classList.add('loading');
+            try {
+                const tags = [
+                    { name: 'NovelId', value: novelId },
+                    { name: 'ChapterIndex', value: index }
+                ];
+                const msgId = await sendMessage('Update-Chapter', tags, content);
+                document.getElementById('update-result').textContent = `✅ 消息已发送！ID: ${msgId}`;
+            } catch (e) {
+                document.getElementById('update-result').textContent = `❌ 更新失败: ${e.message}`;
+            } finally {
+                btn.disabled = false; btn.classList.remove('loading');
+            }
+        });
+
+        // 查询收益
+        document.getElementById('get-earnings-btn').addEventListener('click', async () => {
+            if (!document.querySelector('.wallet-address').textContent.includes('ao')) return alert('请先连接钱包');
+            const btn = document.getElementById('get-earnings-btn');
+            btn.disabled = true; btn.classList.add('loading');
+            try {
+                const output = await dryRun('Get-Earnings');
+                document.getElementById('earnings-result').textContent = output;
+            } catch (e) {
+                document.getElementById('earnings-result').textContent = `❌ 查询失败: ${e.message}`;
+            } finally {
+                btn.disabled = false; btn.classList.remove('loading');
+            }
+        });
+    </script>
+</body>
+</html>
