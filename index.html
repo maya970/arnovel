@@ -3,86 +3,59 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AO 小说平台 - 首页</title>
-    <script src="https://unpkg.com/@permaweb/aoconnect/dist/browser.js"></script>
-    <style>
-        /* 保持绿色阅读风格 */
-        body { font-family: Arial, sans-serif; margin: 0; padding: 20px; background: #f6ffed; }
-        .container { max-width: 1200px; margin: auto; }
-        h1 { text-align: center; color: #389e0d; }
-        #search { width: 100%; padding: 15px; font-size: 18px; border-radius: 8px; border: 1px solid #b7eb8f; margin-bottom: 20px; }
-        .novel-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; }
-        .novel-card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); border: 1px solid #b7eb8f; }
-        .novel-card h3 { margin: 0 0 10px; color: #389e0d; }
-        .novel-card a { color: #389e0d; font-weight: bold; text-decoration: none; }
-        .novel-card a:hover { text-decoration: underline; }
-        .wallet { text-align: center; margin: 20px 0; padding: 10px; background: #d9f7be; border-radius: 8px; }
-    </style>
+    <title>AO小说平台 - 首页</title>
+    <link rel="stylesheet" href="common.css">
 </head>
 <body>
     <div class="container">
-        <h1>📚 AO 小说平台</h1>
-        <div class="wallet">
-            <button id="connect-wallet">连接钱包（付费章节需用）</button>
-            <span>地址: <span id="wallet-address">未连接</span></span>
+        <header>
+            <h1>📚 AO小说平台</h1>
+            <p>永久存储 · 作者直营</p>
+        </header>
+
+        <div style="text-align:center; margin-bottom:24px;">
+            <button id="connect-wallet">连接钱包</button>
+            <span style="margin-left:16px;">地址: <span class="wallet-address">未连接</span></span>
+            <a href="author-dashboard.html" style="margin-left:16px; color:white; text-decoration:underline;">作者后台 →</a>
         </div>
-        <input type="text" id="search" placeholder="搜索标题或简介..." />
-        <div id="novel-grid" class="novel-grid"></div>
+
+        <h2>📋 小说列表</h2>
+        <button id="refresh-list">刷新列表</button>
+        <div id="novels-list" style="margin-top:16px;"></div>
     </div>
 
-    <script>
-        const { dryrun, createDataItemSigner } = window.aoconnect;
-        const PROCESS_ID = "51tMVLxBazWMBT9NhfaCuDP3HjQfZOggIcT7l9mRrbw";
-        let signer = null;
+    <script type="module" src="common.js"></script>
+    <script type="module">
+        import { connectWallet, listAllNovels } from "./common.js";
 
-        async function checkWallet() {
-            if (!window.arweaveWallet) return;
+        document.getElementById('connect-wallet').addEventListener('click', connectWallet);
+        document.getElementById('refresh-list').addEventListener('click', async () => {
+            const btn = document.getElementById('refresh-list');
+            btn.disabled = true; btn.classList.add('loading');
             try {
-                const addr = await window.arweaveWallet.getActiveAddress();
-                if (addr) {
-                    signer = createDataItemSigner(window.arweaveWallet);
-                    document.getElementById('wallet-address').textContent = addr.slice(0,6)+'...'+addr.slice(-4);
-                    document.getElementById('connect-wallet').textContent = '已连接';
-                    document.getElementById('connect-wallet').disabled = true;
-                }
-            } catch {}
-        }
-
-        document.getElementById('connect-wallet').onclick = async () => {
-            if (!window.arweaveWallet) return alert('未安装Wander扩展');
-            try {
-                await window.arweaveWallet.connect(['ACCESS_ADDRESS', 'SIGN_TRANSACTION', 'SIGNATURE']);
-                await checkWallet();
-            } catch (e) { alert('连接失败: ' + e.message); }
-        };
-
-        async function loadNovels() {
-            try {
-                const res = await dryrun({ process: PROCESS_ID, tags: [{name:'Action',value:'List-Novels'}] });
-                let novels = JSON.parse(res.Messages[0].Data || '[]');
-                novels.sort((a,b) => (b.LastUpdate || 0) - (a.LastUpdate || 0)); // 新更新在前（假设有LastUpdate字段）
-
-                const grid = document.getElementById('novel-grid');
-                grid.innerHTML = '';
-                novels.forEach(n => {
+                const novels = await listAllNovels();
+                const container = document.getElementById('novels-list');
+                container.innerHTML = '';
+                novels.forEach(novel => {
                     const card = document.createElement('div');
                     card.className = 'novel-card';
-                    card.innerHTML = `<h3>${n.Title}</h3><p>${n.Description}</p>
-                        <a href="novel.html?id=${n.Id}">查看详情 →</a>`;
-                    grid.appendChild(card);
+                    card.innerHTML = `
+                        <h3>${novel.title}</h3>
+                        <p>${novel.description.slice(0,120)}...</p>
+                        <small>作者: ${novel.author.slice(0,10)}... • 章节: ${novel.chapters?.length || 0}</small>
+                    `;
+                    card.onclick = () => location.href = `novel.html?id=${novel.id}`;
+                    container.appendChild(card);
                 });
-            } catch (e) { document.getElementById('novel-grid').innerHTML = '加载失败'; }
-        }
-
-        document.getElementById('search').addEventListener('input', e => {
-            const term = e.target.value.toLowerCase();
-            document.querySelectorAll('.novel-card').forEach(card => {
-                card.style.display = card.textContent.toLowerCase().includes(term) ? 'block' : 'none';
-            });
+            } catch (e) {
+                alert("加载失败: " + e.message);
+            } finally {
+                btn.disabled = false; btn.classList.remove('loading');
+            }
         });
 
-        checkWallet();
-        loadNovels();
+        // 页面加载自动刷新
+        document.getElementById('refresh-list').click();
     </script>
 </body>
 </html>
