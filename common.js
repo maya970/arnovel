@@ -1,7 +1,7 @@
 import { QuickWallet } from "https://unpkg.com/quick-wallet/dist/quick-wallet.browser.esm.js";
 import { message, createDataItemSigner, dryrun } from "https://unpkg.com/@permaweb/aoconnect@0.0.56/dist/browser.js";
 
-const PROCESS_ID = "<process_id>"; // 你必须替换成真实的AO进程ID
+const PROCESS_ID = "51tMVLxBazWMBT9NhfaCuDP3HjQfZOggIcT7l9mRrbw"; // 你必须替换成真实的AO进程ID
 
 let walletAddress = null;
 let signer = null;
