@@ -1,0 +1,24 @@
+* { box-sizing: border-box; }
+body { font-family: 'Segoe UI', -apple-system, sans-serif; margin: 0; padding: 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; color: #333; }
+.container { max-width: 1200px; margin: 0 auto; background: white; border-radius: 16px; box-shadow: 0 20px 40px rgba(0,0,0,0.1); overflow: hidden; padding: 24px; }
+header { background: linear-gradient(90deg, #ff6b6b, #4ecdc4); color: white; padding: 24px; text-align: center; border-radius: 12px 12px 0 0; margin: -24px -24px 24px -24px; }
+h1 { margin: 0; font-size: 2.2em; font-weight: 700; }
+h2 { color: #4a5568; margin: 24px 0 16px; font-size: 1.6em; display: flex; align-items: center; gap: 8px; }
+button { background: linear-gradient(90deg, #667eea, #764ba2); color: white; border: none; padding: 12px 24px; border-radius: 8px; font-weight: 600; cursor: pointer; transition: all 0.2s; }
+button:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(102,126,234,0.3); }
+button:disabled { opacity: 0.5; cursor: not-allowed; }
+.wallet-section { background: #f8fafc; border-radius: 12px; padding: 20px; text-align: center; margin-bottom: 24px; }
+.wallet-status { font-size: 16px; font-weight: 600; padding: 12px; border-radius: 8px; margin: 12px 0; display: inline-block; min-width: 200px; }
+.status-disconnected { background: #fee2e2; color: #dc2626; }
+.status-connected { background: #dcfce7; color: #16a34a; }
+.novel-card { background: #f8fafc; padding: 20px; border-radius: 12px; margin-bottom: 16px; cursor: pointer; transition: all 0.2s; }
+.novel-card:hover { transform: translateY(-4px); box-shadow: 0 10px 20px rgba(0,0,0,0.1); }
+#chapter-content { line-height: 1.8; font-size: 1.15em; white-space: pre-wrap; min-height: 60vh; padding: 20px; background: #f8fafc; border-radius: 12px; }
+.nav-btn { position: fixed; bottom: 30px; background: rgba(255,255,255,0.95); padding: 12px 24px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.2); font-size: 1.1em; }
+#prev-btn { left: 30px; }
+#next-btn { right: 30px; }
+#chapter-info { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); background: rgba(255,255,255,0.95); padding: 12px 32px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.2); }
+.loading { position: relative; }
+.loading::after { content: ''; position: absolute; top: 50%; left: 50%; width: 20px; height: 20px; margin: -10px 0 0 -10px; border: 2px solid #f3f4f6; border-top: 2px solid #667eea; border-radius: 50%; animation: spin 1s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+@media (max-width: 768px) { body { padding: 12px; } .container { padding: 16px; } }
