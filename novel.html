@@ -3,300 +3,70 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AO 小说平台</title>
-    <!-- 使用 jsDelivr 提供的 ESM 版本 + importmap 解决浏览器兼容 -->
-    <script type="importmap">
-    {
-      "imports": {
-        "@permaweb/aoconnect": "https://cdn.jsdelivr.net/npm/@permaweb/aoconnect@0.0.93/+esm"
-      }
-    }
-    </script>
-    <style>
-        body { font-family: Arial, sans-serif; margin: 20px; background: #f0f4f8; }
-        .container { max-width: 900px; margin: auto; background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); }
-        h1 { text-align: center; color: #333; }
-        section { margin-bottom: 30px; padding: 20px; border: 1px solid #ddd; border-radius: 8px; background: #fafafa; }
-        h2 { color: #444; }
-        input, textarea { width: 100%; padding: 10px; margin: 10px 0; border: 1px solid #ccc; border-radius: 4px; }
-        button { padding: 10px 20px; background: #4a6cf7; color: white; border: none; border-radius: 4px; cursor: pointer; }
-        button:hover { background: #3a5be6; }
-        pre { background: #eee; padding: 15px; border-radius: 4px; white-space: pre-wrap; max-height: 300px; overflow: auto; }
-        .wallet-status { font-weight: bold; color: #d32f2f; }
-        .connected { color: #2e7d32; }
-        small { color: #d32f2f; font-weight: bold; }
-    </style>
+    <title>小说详情</title>
+    <link rel="stylesheet" href="common.css">
 </head>
 <body>
     <div class="container">
-        <h1>📚 AO 小说平台</h1>
+        <header>
+            <h1 id="novel-title">加载中...</h1>
+        </header>
 
-        <section>
-            <button id="connect-wallet">连接 Wander 钱包</button>
-            <p>钱包地址: <span id="wallet-address" class="wallet-status">未连接</span></p>
-            <small>⚠️ 必须先点击浏览器右上角 Wander 图标（⛵️）输入密码完全解锁钱包！否则会报 "auth required"</small>
-        </section>
+        <div class="wallet-section">
+            <button id="connect-wallet">连接Wander钱包</button>
+            <p>钱包地址: <span class="wallet-address status-disconnected">未连接</span></p>
+        </div>
 
-        <section>
-            <h2>创建小说</h2>
-            <input id="novel-title" placeholder="标题" />
-            <textarea id="novel-description" placeholder="简介"></textarea>
-            <button id="create-novel-btn">创建</button>
-            <pre id="create-result"></pre>
-        </section>
+        <p id="novel-desc" style="font-size:1.1em; line-height:1.6;"></p>
+        <p><strong>作者：</strong><span id="novel-author"></span></p>
 
-        <section>
-            <h2>小说列表</h2>
-            <button id="list-novels-btn">查询所有小说</button>
-            <pre id="list-result"></pre>
-        </section>
-
-        <section>
-            <h2>小说详情</h2>
-            <input id="novel-id" placeholder="小说 ID" />
-            <button id="get-novel-btn">查询</button>
-            <pre id="novel-result"></pre>
-        </section>
-
-        <section>
-            <h2>添加章节（仅作者）</h2>
-            <input id="add-novel-id" placeholder="小说 ID" />
-            <input id="chapter-title" placeholder="章节标题" />
-            <textarea id="chapter-content" placeholder="章节内容"></textarea>
-            <label><input type="checkbox" id="is-paid"> 付费章节</label>
-            <input id="chapter-price" type="number" placeholder="价格 (AR，可留空默认0)" />
-            <button id="add-chapter-btn">添加</button>
-            <pre id="add-result"></pre>
-        </section>
-
-        <section>
-            <h2>更新章节（仅作者）</h2>
-            <input id="update-novel-id" placeholder="小说 ID" />
-            <input id="chapter-index" type="number" placeholder="章节序号 (从1开始)" />
-            <textarea id="new-content" placeholder="新内容"></textarea>
-            <button id="update-chapter-btn">更新</button>
-            <pre id="update-result"></pre>
-        </section>
-
-        <section>
-            <h2>购买章节</h2>
-            <input id="buy-novel-id" placeholder="小说 ID" />
-            <input id="buy-chapter-index" type="number" placeholder="章节序号" />
-            <button id="buy-chapter-btn">购买</button>
-            <pre id="buy-result"></pre>
-        </section>
-
-        <section>
-            <h2>阅读章节</h2>
-            <input id="read-novel-id" placeholder="小说 ID" />
-            <input id="read-chapter-index" type="number" placeholder="章节序号" />
-            <button id="read-chapter-btn">阅读</button>
-            <pre id="read-result"></pre>
-        </section>
-
-        <section>
-            <h2>我的收益</h2>
-            <button id="get-earnings-btn">查询收益</button>
-            <pre id="earnings-result"></pre>
-        </section>
+        <h2>📑 章节列表</h2>
+        <div id="chapters-list"></div>
     </div>
 
+    <script type="module" src="common.js"></script>
     <script type="module">
-        import { message, result, dryrun, createDataItemSigner } from "@permaweb/aoconnect";
+        import { connectWallet, getNovel } from "./common.js";
 
-        const PROCESS_ID = "51tMVLxBazWMBT9NhfaCuDP3HjQfZOggIcT7l9mRrbw";
+        document.getElementById('connect-wallet')?.addEventListener('click', connectWallet);
 
-        let signer = null;
-        let walletAddress = null;
-
-        function updateWalletDisplay(addr) {
-            walletAddress = addr;
-            const span = document.getElementById('wallet-address');
-            const btn = document.getElementById('connect-wallet');
-            if (addr) {
-                span.textContent = addr.slice(0, 6) + '...' + addr.slice(-4);
-                span.classList.add('connected');
-                btn.textContent = '已连接';
-                btn.disabled = true;
-            } else {
-                span.textContent = '未连接';
-                span.classList.remove('connected');
-                btn.textContent = '连接 Wander 钱包';
-                btn.disabled = false;
-            }
+        const urlParams = new URLSearchParams(location.search);
+        const novelId = urlParams.get('id');
+        if (!novelId) {
+            alert('缺少小说ID');
+            location.href = 'index.html';
         }
 
-        async function connectWallet() {
-            if (!window.arweaveWallet) {
-                alert('未检测到 Wander 扩展！请安装 https://www.wander.app/download 并刷新页面');
-                return;
-            }
-
+        async function load() {
             try {
-                await window.arweaveWallet.connect(['ACCESS_ADDRESS', 'SIGN_TRANSACTION', 'SIGNATURE']);
-                const addr = await window.arweaveWallet.getActiveAddress();
-                signer = createDataItemSigner(window.arweaveWallet);
-                updateWalletDisplay(addr);
-                alert('钱包连接成功！');
-            } catch (err) {
-                let msg = err.message || '';
-                if (msg.includes('auth required')) {
-                    msg = '钱包未解锁！请点击 Wander 图标输入密码解锁后再试';
+                const novel = await getNovel(novelId);
+                document.getElementById('novel-title').textContent = novel.title || '无标题';
+                document.title = novel.title || '小说详情';
+                document.getElementById('novel-desc').textContent = novel.description || '';
+                document.getElementById('novel-author').textContent = novel.author?.slice(0,12) + '...' || '未知';
+
+                const list = document.getElementById('chapters-list');
+                if (!novel.chapters || novel.chapters.length === 0) {
+                    list.innerHTML = '<p>暂无章节</p>';
+                    return;
                 }
-                alert('连接失败：' + msg + '\n请检查 Wander 是否解锁并批准权限');
-                console.error(err);
+                novel.chapters.forEach((ch, idx) => {
+                    const div = document.createElement('div');
+                    div.className = 'novel-card';
+                    div.innerHTML = `
+                        <strong>第${idx+1}章 ${ch.title || '无标题'}</strong>
+                        ${ch.isPaid ? '<span style="color:red; margin-left:12px;">🔒 付费</span>' : '<span style="color:green; margin-left:12px;">免费</span>'}
+                        ${ch.price > 0 ? ` <span style="margin-left:8px;">(${ch.price} Credits)</span>` : ''}
+                    `;
+                    div.onclick = () => location.href = `chapter.html?novel=${novelId}&ch=${idx+1}`;
+                    list.appendChild(div);
+                });
+            } catch (e) {
+                alert('加载失败: ' + e.message);
             }
         }
 
-        document.getElementById('connect-wallet').addEventListener('click', connectWallet);
-
-        // 查询操作（dryrun）
-        async function aoDryrun(tags) {
-            const res = await dryrun({ process: PROCESS_ID, tags });
-            return res.Messages?.[0]?.Data || JSON.stringify(res, null, 2);
-        }
-
-        // 写入操作（message + result）
-        async function aoMessage(tags, data = '') {
-            if (!signer) throw new Error('请先连接钱包');
-            const msgId = await message({ process: PROCESS_ID, signer, tags, data });
-            const res = await result({ message: msgId, process: PROCESS_ID });
-            return res.Output || res.Messages?.[0]?.Data || JSON.stringify(res, null, 2);
-        }
-
-        // 所有按钮事件
-        document.getElementById('create-novel-btn').addEventListener('click', async () => {
-            const title = document.getElementById('novel-title').value;
-            const desc = document.getElementById('novel-description').value;
-            if (!title || !desc) return alert('标题和简介必填');
-            try {
-                const out = await aoMessage([
-                    { name: 'Action', value: 'Create-Novel' },
-                    { name: 'Title', value: title },
-                    { name: 'Description', value: desc }
-                ]);
-                document.getElementById('create-result').textContent = out;
-            } catch (e) {
-                document.getElementById('create-result').textContent = '错误: ' + e.message;
-            }
-        });
-
-        document.getElementById('list-novels-btn').addEventListener('click', async () => {
-            try {
-                const out = await aoDryrun([{ name: 'Action', value: 'List-Novels' }]);
-                document.getElementById('list-result').textContent = out;
-            } catch (e) {
-                document.getElementById('list-result').textContent = '错误: ' + e.message;
-            }
-        });
-
-        document.getElementById('get-novel-btn').addEventListener('click', async () => {
-            const id = document.getElementById('novel-id').value;
-            if (!id) return alert('请输入小说ID');
-            try {
-                const out = await aoDryrun([
-                    { name: 'Action', value: 'Get-Novel' },
-                    { name: 'NovelId', value: id }
-                ]);
-                document.getElementById('novel-result').textContent = out;
-            } catch (e) {
-                document.getElementById('novel-result').textContent = '错误: ' + e.message;
-            }
-        });
-
-        document.getElementById('add-chapter-btn').addEventListener('click', async () => {
-            const id = document.getElementById('add-novel-id').value;
-            const title = document.getElementById('chapter-title').value;
-            const content = document.getElementById('chapter-content').value;
-            const isPaid = document.getElementById('is-paid').checked ? 'true' : 'false';
-            const price = document.getElementById('chapter-price').value || '0';
-            if (!id || !title || !content) return alert('必填项不能为空');
-            try {
-                const out = await aoMessage([
-                    { name: 'Action', value: 'Add-Chapter' },
-                    { name: 'NovelId', value: id },
-                    { name: 'Title', value: title },
-                    { name: 'IsPaid', value: isPaid },
-                    { name: 'Price', value: price }
-                ], content);
-                document.getElementById('add-result').textContent = out;
-            } catch (e) {
-                document.getElementById('add-result').textContent = '错误: ' + e.message;
-            }
-        });
-
-        document.getElementById('update-chapter-btn').addEventListener('click', async () => {
-            const id = document.getElementById('update-novel-id').value;
-            const index = document.getElementById('chapter-index').value;
-            const content = document.getElementById('new-content').value;
-            if (!id || !index || !content) return alert('必填项不能为空');
-            try {
-                const out = await aoMessage([
-                    { name: 'Action', value: 'Update-Chapter' },
-                    { name: 'NovelId', value: id },
-                    { name: 'ChapterIndex', value: index }
-                ], content);
-                document.getElementById('update-result').textContent = out;
-            } catch (e) {
-                document.getElementById('update-result').textContent = '错误: ' + e.message;
-            }
-        });
-
-        document.getElementById('buy-chapter-btn').addEventListener('click', async () => {
-            const id = document.getElementById('buy-novel-id').value;
-            const index = document.getElementById('buy-chapter-index').value;
-            if (!id || !index) return alert('必填项不能为空');
-            try {
-                const out = await aoMessage([
-                    { name: 'Action', value: 'Buy-Chapter' },
-                    { name: 'NovelId', value: id },
-                    { name: 'ChapterIndex', value: index }
-                ]);
-                document.getElementById('buy-result').textContent = out;
-            } catch (e) {
-                document.getElementById('buy-result').textContent = '错误: ' + e.message;
-            }
-        });
-
-        document.getElementById('read-chapter-btn').addEventListener('click', async () => {
-            const id = document.getElementById('read-novel-id').value;
-            const index = document.getElementById('read-chapter-index').value;
-            if (!id || !index) return alert('必填项不能为空');
-            try {
-                const out = await aoDryrun([
-                    { name: 'Action', value: 'Read-Chapter' },
-                    { name: 'NovelId', value: id },
-                    { name: 'ChapterIndex', value: index }
-                ]);
-                document.getElementById('read-result').textContent = out;
-            } catch (e) {
-                document.getElementById('read-result').textContent = '错误: ' + e.message;
-            }
-        });
-
-        document.getElementById('get-earnings-btn').addEventListener('click', async () => {
-            try {
-                const out = await aoDryrun([{ name: 'Action', value: 'Get-Earnings' }]);
-                document.getElementById('earnings-result').textContent = out;
-            } catch (e) {
-                document.getElementById('earnings-result').textContent = '错误: ' + e.message;
-            }
-        });
-
-        // 页面加载后自动检查是否已有连接
-        window.addEventListener('load', async () => {
-            if (window.arweaveWallet) {
-                try {
-                    const addr = await window.arweaveWallet.getActiveAddress();
-                    if (addr) {
-                        signer = createDataItemSigner(window.arweaveWallet);
-                        updateWalletDisplay(addr);
-                    }
-                } catch (e) {
-                    console.log('无活跃会话');
-                }
-            }
-        });
+        load();
     </script>
 </body>
 </html>
