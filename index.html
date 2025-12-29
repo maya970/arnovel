@@ -3,227 +3,352 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Novel Platform 小说平台</title>
-    <!-- 关键：使用 aoconnect 的 browser bundle（已打包所有依赖） -->
-    <script src="https://unpkg.com/@permaweb/aoconnect/dist/browser.js"></script>
-    <!-- common.js 放在后面，确保 aoconnect 已加载 -->
+    <title>小说平台 - AO Permaweb</title>
+    <!-- 最新aoconnect浏览器完整bundle，无依赖问题 -->
+    <script src="https://unpkg.com/@permaweb/aoconnect@latest/dist/browser.js"></script>
     <script src="common.js"></script>
     <style>
-        body { font-family: Arial, Helvetica, sans-serif; margin: 20px; background: #f9f9f9; }
-        h1 { text-align: center; color: #333; }
-        section { background: white; padding: 20px; margin-bottom: 20px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
-        input, textarea, button { width: 100%; padding: 10px; margin: 10px 0; box-sizing: border-box; }
-        button { background: #0066ff; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 16px; }
-        button:hover { background: #0055cc; }
-        pre { background: #f0f0f0; padding: 15px; border-radius: 4px; white-space: pre-wrap; word-wrap: break-word; }
-        .wallet-address { font-weight: bold; color: #0066ff; }
-        label { display: block; margin: 10px 0 5px; }
+        * { box-sizing: border-box; }
+        body { 
+            font-family: 'Segoe UI', -apple-system, sans-serif; 
+            margin: 0; padding: 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh; color: #333;
+        }
+        .container { max-width: 1200px; margin: 0 auto; background: white; border-radius: 16px; box-shadow: 0 20px 40px rgba(0,0,0,0.1); overflow: hidden; }
+        header { background: linear-gradient(90deg, #ff6b6b, #4ecdc4); color: white; padding: 24px; text-align: center; }
+        h1 { margin: 0; font-size: 2.2em; font-weight: 700; }
+        section { padding: 24px; border-bottom: 1px solid #eee; }
+        section:last-child { border-bottom: none; }
+        h2 { color: #4a5568; margin: 0 0 16px 0; font-size: 1.4em; display: flex; align-items: center; gap: 8px; }
+        .input-group { display: flex; flex-direction: column; gap: 12px; margin-bottom: 16px; }
+        input, textarea { padding: 12px; border: 2px solid #e2e8f0; border-radius: 8px; font-size: 14px; transition: all 0.2s; }
+        input:focus, textarea:focus { outline: none; border-color: #667eea; box-shadow: 0 0 0 3px rgba(102,126,234,0.1); }
+        textarea { resize: vertical; min-height: 100px; }
+        button { 
+            background: linear-gradient(90deg, #667eea, #764ba2); 
+            color: white; border: none; padding: 12px 24px; 
+            border-radius: 8px; font-size: 14px; font-weight: 600; 
+            cursor: pointer; transition: all 0.2s; 
+        }
+        button:hover { transform: translateY(-1px); box-shadow: 0 8px 20px rgba(102,126,234,0.3); }
+        button:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+        .wallet-section { background: #f8fafc; border-radius: 12px; padding: 20px; text-align: center; }
+        .wallet-status { font-size: 16px; font-weight: 600; padding: 12px; border-radius: 8px; margin: 12px 0; }
+        .status-disconnected { background: #fee2e2; color: #dc2626; }
+        .status-connected { background: #dcfce7; color: #16a34a; animation: pulse 2s infinite; }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.8; } }
+        pre { background: #1e293b; color: #e2e8f0; padding: 16px; border-radius: 8px; font-size: 13px; line-height: 1.5; white-space: pre-wrap; max-height: 300px; overflow-y: auto; }
+        .checkbox-group { display: flex; align-items: center; gap: 8px; font-size: 14px; }
+        .loading { position: relative; }
+        .loading::after { content: ''; position: absolute; top: 50%; left: 50%; width: 20px; height: 20px; margin: -10px 0 0 -10px; border: 2px solid #f3f4f6; border-top: 2px solid #667eea; border-radius: 50%; animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        @media (max-width: 768px) { body { padding: 12px; } section { padding: 16px; } h1 { font-size: 1.8em; } }
     </style>
 </head>
 <body>
-    <h1>Novel Platform 小说平台</h1>
+    <div class="container">
+        <header>
+            <h1>📚 AO小说平台</h1>
+            <p>基于Permaweb永久存储，支持付费章节与作者收益</p>
+        </header>
 
-    <section id="wallet-section">
-        <button id="connect-wallet">连接钱包 (Wander)</button>
-        <p>钱包地址: <span id="wallet-address" class="wallet-address">未连接</span></p>
-    </section>
+        <section id="wallet-section" class="wallet-section">
+            <h2>💳 钱包连接</h2>
+            <button id="connect-wallet">连接Wander钱包</button>
+            <p>钱包地址: <span id="wallet-address" class="wallet-status status-disconnected">未连接</span></p>
+            <small style="color: #64748b;">请确保Wander扩展已安装、解锁（点击扩展图标输入密码）并通过http://localhost打开</small>
+        </section>
 
-    <section id="create-novel">
-        <h2>创建小说</h2>
-        <input id="novel-title" placeholder="小说标题" />
-        <textarea id="novel-description" placeholder="小说简介"></textarea>
-        <button id="create-novel-btn">创建小说</button>
-        <pre id="create-result"></pre>
-    </section>
+        <section id="create-novel">
+            <h2>📖 创建小说</h2>
+            <div class="input-group">
+                <input id="novel-title" placeholder="小说标题（必填）" maxlength="100" />
+                <textarea id="novel-description" placeholder="小说简介（必填）" maxlength="500"></textarea>
+                <button id="create-novel-btn">🚀 创建小说</button>
+            </div>
+            <pre id="create-result">点击创建获取小说ID</pre>
+        </section>
 
-    <section id="list-novels">
-        <h2>所有小说列表</h2>
-        <button id="list-novels-btn">获取所有小说</button>
-        <pre id="list-result"></pre>
-    </section>
+        <section id="list-novels">
+            <h2>📋 小说列表</h2>
+            <button id="list-novels-btn">🔍 获取所有小说</button>
+            <pre id="list-result">点击查询小说列表（无需钱包）</pre>
+        </section>
 
-    <section id="get-novel">
-        <h2>查看小说信息</h2>
-        <input id="novel-id" placeholder="小说 ID" />
-        <button id="get-novel-btn">查询</button>
-        <pre id="novel-result"></pre>
-    </section>
+        <section id="get-novel">
+            <h2>📄 小说详情</h2>
+            <div class="input-group">
+                <input id="novel-id" placeholder="输入小说ID" />
+                <button id="get-novel-btn">📖 查看详情</button>
+            </div>
+            <pre id="novel-result">输入小说ID后点击查询</pre>
+        </section>
 
-    <section id="add-chapter">
-        <h2>添加章节（仅作者）</h2>
-        <input id="add-novel-id" placeholder="小说 ID" />
-        <input id="chapter-title" placeholder="章节标题" />
-        <textarea id="chapter-content" placeholder="章节正文内容"></textarea>
-        <label><input type="checkbox" id="is-paid" /> 是否付费章节</label>
-        <input id="chapter-price" type="number" placeholder="价格（可选，单位：AR 或自定义代币）" />
-        <button id="add-chapter-btn">添加章节</button>
-        <pre id="add-result"></pre>
-    </section>
+        <section id="add-chapter">
+            <h2>✨ 添加章节（仅作者）</h2>
+            <div class="input-group">
+                <input id="add-novel-id" placeholder="小说ID" />
+                <input id="chapter-title" placeholder="章节标题" maxlength="100" />
+                <textarea id="chapter-content" placeholder="章节正文内容" maxlength="10000"></textarea>
+                <label class="checkbox-group">
+                    <input type="checkbox" id="is-paid" /> 付费章节
+                </label>
+                <input id="chapter-price" type="number" min="0" step="0.0001" placeholder="价格（AR，默认0免费）" />
+                <button id="add-chapter-btn">📝 添加章节</button>
+            </div>
+            <pre id="add-result">填写信息后点击添加</pre>
+        </section>
 
-    <section id="update-chapter">
-        <h2>更新章节（仅作者）</h2>
-        <input id="update-novel-id" placeholder="小说 ID" />
-        <input id="chapter-index" type="number" placeholder="章节序号（从1开始）" />
-        <textarea id="new-content" placeholder="新章节内容"></textarea>
-        <button id="update-chapter-btn">更新章节</button>
-        <pre id="update-result"></pre>
-    </section>
+        <section id="update-chapter">
+            <h2>🔧 更新章节（仅作者）</h2>
+            <div class="input-group">
+                <input id="update-novel-id" placeholder="小说ID" />
+                <input id="chapter-index" type="number" min="1" placeholder="章节序号（从1开始）" />
+                <textarea id="new-content" placeholder="新的章节内容" maxlength="10000"></textarea>
+                <button id="update-chapter-btn">💾 更新章节</button>
+            </div>
+            <pre id="update-result">输入信息后点击更新</pre>
+        </section>
 
-    <section id="buy-chapter">
-        <h2>购买章节</h2>
-        <input id="buy-novel-id" placeholder="小说 ID" />
-        <input id="buy-chapter-index" type="number" placeholder="章节序号（从1开始）" />
-        <button id="buy-chapter-btn">购买</button>
-        <pre id="buy-result"></pre>
-    </section>
+        <section id="buy-chapter">
+            <h2>💰 购买章节</h2>
+            <div class="input-group">
+                <input id="buy-novel-id" placeholder="小说ID" />
+                <input id="buy-chapter-index" type="number" min="1" placeholder="章节序号" />
+                <button id="buy-chapter-btn">💳 购买</button>
+            </div>
+            <pre id="buy-result">需要钱包余额支付AR</pre>
+        </section>
 
-    <section id="read-chapter">
-        <h2>阅读章节</h2>
-        <input id="read-novel-id" placeholder="小说 ID" />
-        <input id="read-chapter-index" type="number" placeholder="章节序号（从1开始）" />
-        <button id="read-chapter-btn">阅读</button>
-        <pre id="read-result"></pre>
-    </section>
+        <section id="read-chapter">
+            <h2>👁️ 阅读章节</h2>
+            <div class="input-group">
+                <input id="read-novel-id" placeholder="小说ID" />
+                <input id="read-chapter-index" type="number" min="1" placeholder="章节序号" />
+                <button id="read-chapter-btn">📖 阅读</button>
+            </div>
+            <pre id="read-result">已购买或免费章节可阅读</pre>
+        </section>
 
-    <section id="get-earnings">
-        <h2>我的收益</h2>
-        <button id="get-earnings-btn">查询收益</button>
-        <pre id="earnings-result"></pre>
-    </section>
+        <section id="get-earnings">
+            <h2>💵 我的收益</h2>
+            <button id="get-earnings-btn">💰 查询收益</button>
+            <pre id="earnings-result">点击查询作者总收益（无需购买）</pre>
+        </section>
+    </div>
 
     <script>
-        // 所有事件绑定等页面加载完成后执行
-        window.addEventListener('load', () => {
-            // 连接钱包按钮
+        // 等待common.js和aoconnect完全加载
+        window.addEventListener('load', async () => {
+            console.log('[小说平台] 页面加载完成，检查依赖...');
+            console.log('aoconnect:', !!window.aoconnect);
+            console.log('connectWallet:', !!window.connectWallet);
+            console.log('arweaveWallet:', !!window.arweaveWallet);
+
+            if (!window.aoconnect) {
+                alert('❌ aoconnect库加载失败！请检查网络，尝试Ctrl+Shift+R硬刷新，或更换浏览器。');
+                return;
+            }
+            if (!window.connectWallet) {
+                alert('❌ common.js加载失败！请确保common.js文件存在且无语法错误。');
+                return;
+            }
+
+            // 绑定钱包连接
             document.getElementById('connect-wallet').addEventListener('click', window.connectWallet);
 
-            // 以下所有操作都使用 common.js 中暴露的全局函数
+            // 创建小说
             document.getElementById('create-novel-btn').addEventListener('click', async () => {
-                if (!window.walletAddress) return alert('请先连接钱包！');
+                if (!window.walletAddress) return alert('❌ 请先连接钱包！');
+                const btn = document.getElementById('create-novel-btn');
                 const title = document.getElementById('novel-title').value.trim();
                 const desc = document.getElementById('novel-description').value.trim();
-                if (!title) return alert('请输入小说标题');
-                const tags = [
-                    { name: 'Action', value: 'Create-Novel' },
-                    { name: 'Title', value: title },
-                    { name: 'Description', value: desc }
-                ];
+                
+                if (!title || !desc) return alert('❌ 标题和简介不能为空！');
+                
+                btn.textContent = '创建中...'; btn.disabled = true; btn.classList.add('loading');
                 try {
-                    const result = await window.aoMessage(tags);
-                    document.getElementById('create-result').textContent = result;
+                    const tags = [
+                        { name: 'Action', value: 'Create-Novel' },
+                        { name: 'Title', value: title },
+                        { name: 'Description', value: desc }
+                    ];
+                    const output = await window.aoMessage(tags);
+                    document.getElementById('create-result').textContent = `✅ 创建成功！\n${output}`;
                 } catch (e) {
-                    alert('创建失败：' + e.message);
+                    console.error('[创建小说错误]', e);
+                    document.getElementById('create-result').textContent = `❌ 创建失败: ${e.message}`;
+                    alert(`创建失败: ${e.message}\n请检查小说标题/简介，确认AO进程正常。`);
+                } finally {
+                    btn.textContent = '🚀 创建小说'; btn.disabled = false; btn.classList.remove('loading');
                 }
             });
 
+            // 列出小说（查询，无需钱包）
             document.getElementById('list-novels-btn').addEventListener('click', async () => {
-                const tags = [{ name: 'Action', value: 'List-Novels' }];
+                const btn = document.getElementById('list-novels-btn');
+                btn.textContent = '查询中...'; btn.disabled = true; btn.classList.add('loading');
                 try {
-                    const result = await window.aoDryrun(tags);
-                    document.getElementById('list-result').textContent = result;
+                    const tags = [{ name: 'Action', value: 'List-Novels' }];
+                    const output = await window.aoDryrun(tags);
+                    document.getElementById('list-result').textContent = `📋 小说列表:\n${output}`;
                 } catch (e) {
-                    alert('查询失败：' + e.message);
+                    console.error('[查询小说错误]', e);
+                    document.getElementById('list-result').textContent = `❌ 查询失败: ${e.message}`;
+                } finally {
+                    btn.textContent = '🔍 获取所有小说'; btn.disabled = false; btn.classList.remove('loading');
                 }
             });
 
+            // 获取小说详情
             document.getElementById('get-novel-btn').addEventListener('click', async () => {
-                const id = document.getElementById('novel-id').value.trim();
-                if (!id) return alert('请输入小说 ID');
-                const tags = [{ name: 'Action', value: 'Get-Novel' }, { name: 'NovelId', value: id }];
+                const novelId = document.getElementById('novel-id').value.trim();
+                if (!novelId) return alert('❌ 请先输入小说ID！');
+                
+                const btn = document.getElementById('get-novel-btn');
+                btn.textContent = '查询中...'; btn.disabled = true; btn.classList.add('loading');
                 try {
-                    const result = await window.aoDryrun(tags);
-                    document.getElementById('novel-result').textContent = result;
+                    const tags = [
+                        { name: 'Action', value: 'Get-Novel' },
+                        { name: 'NovelId', value: novelId }
+                    ];
+                    const output = await window.aoDryrun(tags);
+                    document.getElementById('novel-result').textContent = `📄 小说详情:\n${output}`;
                 } catch (e) {
-                    alert('查询失败：' + e.message);
+                    console.error('[获取小说错误]', e);
+                    document.getElementById('novel-result').textContent = `❌ 查询失败: ${e.message}`;
+                } finally {
+                    btn.textContent = '📖 查看详情'; btn.disabled = false; btn.classList.remove('loading');
                 }
             });
 
+            // 添加章节
             document.getElementById('add-chapter-btn').addEventListener('click', async () => {
-                if (!window.walletAddress) return alert('请先连接钱包！');
-                const id = document.getElementById('add-novel-id').value.trim();
+                if (!window.walletAddress) return alert('❌ 请先连接钱包！');
+                const novelId = document.getElementById('add-novel-id').value.trim();
                 const title = document.getElementById('chapter-title').value.trim();
                 const content = document.getElementById('chapter-content').value.trim();
+                
+                if (!novelId || !title || !content) return alert('❌ 小说ID、章节标题、内容不能为空！');
+                
+                const btn = document.getElementById('add-chapter-btn');
                 const isPaid = document.getElementById('is-paid').checked ? 'true' : 'false';
                 const price = document.getElementById('chapter-price').value || '0';
-                if (!id || !title || !content) return alert('请填写完整信息');
-                const tags = [
-                    { name: 'Action', value: 'Add-Chapter' },
-                    { name: 'NovelId', value: id },
-                    { name: 'Title', value: title },
-                    { name: 'IsPaid', value: isPaid },
-                    { name: 'Price', value: price }
-                ];
+                
+                btn.textContent = '添加中...'; btn.disabled = true; btn.classList.add('loading');
                 try {
-                    const result = await window.aoMessage(tags, content);
-                    document.getElementById('add-result').textContent = result;
+                    const tags = [
+                        { name: 'Action', value: 'Add-Chapter' },
+                        { name: 'NovelId', value: novelId },
+                        { name: 'Title', value: title },
+                        { name: 'IsPaid', value: isPaid },
+                        { name: 'Price', value: price }
+                    ];
+                    const output = await window.aoMessage(tags, content);
+                    document.getElementById('add-result').textContent = `✅ 添加成功！\n${output}`;
                 } catch (e) {
-                    alert('添加失败：' + e.message);
+                    console.error('[添加章节错误]', e);
+                    document.getElementById('add-result').textContent = `❌ 添加失败: ${e.message}`;
+                } finally {
+                    btn.textContent = '📝 添加章节'; btn.disabled = false; btn.classList.remove('loading');
                 }
             });
 
+            // 更新章节
             document.getElementById('update-chapter-btn').addEventListener('click', async () => {
-                if (!window.walletAddress) return alert('请先连接钱包！');
-                const id = document.getElementById('update-novel-id').value.trim();
-                const index = document.getElementById('chapter-index').value;
+                if (!window.walletAddress) return alert('❌ 请先连接钱包！');
+                const novelId = document.getElementById('update-novel-id').value.trim();
+                const index = document.getElementById('chapter-index').value.trim();
                 const content = document.getElementById('new-content').value.trim();
-                if (!id || !index || !content) return alert('请填写完整信息');
-                const tags = [
-                    { name: 'Action', value: 'Update-Chapter' },
-                    { name: 'NovelId', value: id },
-                    { name: 'ChapterIndex', value: index }
-                ];
+                
+                if (!novelId || !index || !content) return alert('❌ 小说ID、章节序号、内容不能为空！');
+                
+                const btn = document.getElementById('update-chapter-btn');
+                btn.textContent = '更新中...'; btn.disabled = true; btn.classList.add('loading');
                 try {
-                    const result = await window.aoMessage(tags, content);
-                    document.getElementById('update-result').textContent = result;
+                    const tags = [
+                        { name: 'Action', value: 'Update-Chapter' },
+                        { name: 'NovelId', value: novelId },
+                        { name: 'ChapterIndex', value: index }
+                    ];
+                    const output = await window.aoMessage(tags, content);
+                    document.getElementById('update-result').textContent = `✅ 更新成功！\n${output}`;
                 } catch (e) {
-                    alert('更新失败：' + e.message);
+                    console.error('[更新章节错误]', e);
+                    document.getElementById('update-result').textContent = `❌ 更新失败: ${e.message}`;
+                } finally {
+                    btn.textContent = '💾 更新章节'; btn.disabled = false; btn.classList.remove('loading');
                 }
             });
 
+            // 购买章节
             document.getElementById('buy-chapter-btn').addEventListener('click', async () => {
-                if (!window.walletAddress) return alert('请先连接钱包！');
-                const id = document.getElementById('buy-novel-id').value.trim();
-                const index = document.getElementById('buy-chapter-index').value;
-                if (!id || !index) return alert('请填写完整信息');
-                const tags = [
-                    { name: 'Action', value: 'Buy-Chapter' },
-                    { name: 'NovelId', value: id },
-                    { name: 'ChapterIndex', value: index }
-                ];
+                if (!window.walletAddress) return alert('❌ 请先连接钱包！');
+                const novelId = document.getElementById('buy-novel-id').value.trim();
+                const index = document.getElementById('buy-chapter-index').value.trim();
+                
+                if (!novelId || !index) return alert('❌ 小说ID和章节序号不能为空！');
+                
+                const btn = document.getElementById('buy-chapter-btn');
+                btn.textContent = '购买中...'; btn.disabled = true; btn.classList.add('loading');
                 try {
-                    const result = await window.aoMessage(tags);
-                    document.getElementById('buy-result').textContent = result;
+                    const tags = [
+                        { name: 'Action', value: 'Buy-Chapter' },
+                        { name: 'NovelId', value: novelId },
+                        { name: 'ChapterIndex', value: index }
+                    ];
+                    const output = await window.aoMessage(tags);
+                    document.getElementById('buy-result').textContent = `✅ 购买成功！\n${output}`;
                 } catch (e) {
-                    alert('购买失败：' + e.message);
+                    console.error('[购买章节错误]', e);
+                    document.getElementById('buy-result').textContent = `❌ 购买失败: ${e.message}`;
+                } finally {
+                    btn.textContent = '💳 购买'; btn.disabled = false; btn.classList.remove('loading');
                 }
             });
 
+            // 阅读章节
             document.getElementById('read-chapter-btn').addEventListener('click', async () => {
-                const id = document.getElementById('read-novel-id').value.trim();
-                const index = document.getElementById('read-chapter-index').value;
-                if (!id || !index) return alert('请填写完整信息');
-                const tags = [
-                    { name: 'Action', value: 'Read-Chapter' },
-                    { name: 'NovelId', value: id },
-                    { name: 'ChapterIndex', value: index }
-                ];
+                const novelId = document.getElementById('read-novel-id').value.trim();
+                const index = document.getElementById('read-chapter-index').value.trim();
+                
+                if (!novelId || !index) return alert('❌ 小说ID和章节序号不能为空！');
+                
+                const btn = document.getElementById('read-chapter-btn');
+                btn.textContent = '读取中...'; btn.disabled = true; btn.classList.add('loading');
                 try {
-                    const result = await window.aoDryrun(tags);
-                    document.getElementById('read-result').textContent = result;
+                    const tags = [
+                        { name: 'Action', value: 'Read-Chapter' },
+                        { name: 'NovelId', value: novelId },
+                        { name: 'ChapterIndex', value: index }
+                    ];
+                    const output = await window.aoDryrun(tags);
+                    document.getElementById('read-result').textContent = `📖 章节内容:\n${output}`;
                 } catch (e) {
-                    alert('读取失败：' + e.message);
+                    console.error('[阅读章节错误]', e);
+                    document.getElementById('read-result').textContent = `❌ 读取失败: ${e.message}`;
+                } finally {
+                    btn.textContent = '📖 阅读'; btn.disabled = false; btn.classList.remove('loading');
                 }
             });
 
+            // 获取收益
             document.getElementById('get-earnings-btn').addEventListener('click', async () => {
-                const tags = [{ name: 'Action', value: 'Get-Earnings' }];
+                const btn = document.getElementById('get-earnings-btn');
+                btn.textContent = '查询中...'; btn.disabled = true; btn.classList.add('loading');
                 try {
-                    const result = await window.aoDryrun(tags);
-                    document.getElementById('earnings-result').textContent = result;
+                    const tags = [{ name: 'Action', value: 'Get-Earnings' }];
+                    const output = await window.aoDryrun(tags);
+                    document.getElementById('earnings-result').textContent = `💰 收益详情:\n${output}`;
                 } catch (e) {
-                    alert('查询失败：' + e.message);
+                    console.error('[获取收益错误]', e);
+                    document.getElementById('earnings-result').textContent = `❌ 查询失败: ${e.message}`;
+                } finally {
+                    btn.textContent = '💰 查询收益'; btn.disabled = false; btn.classList.remove('loading');
                 }
             });
+
+            console.log('[小说平台] 所有事件监听器已绑定');
         });
     </script>
 </body>
