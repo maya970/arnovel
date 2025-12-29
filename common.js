@@ -64,3 +64,23 @@ export async function readChapter(novelId, index) {
 
 // 导出以便前台后续扩展购买等写操作时使用（虽然现在前台只读，但保留完整性）
 export { walletAddress, signer, message, PROCESS_ID };
+
+// --- 写操作支持（严格按照来源代码） ---
+import { message } from "https://unpkg.com/@permaweb/aoconnect@0.0.56/dist/browser.js"; // 如果已导入可忽略
+
+export async function sendMessage(action, tags = [], data = "") {
+    if (!signer) throw new Error("请先连接钱包");
+    
+    const finalTags = [
+        { name: "Action", value: action },
+        ...tags
+    ];
+
+    const res = await message({
+        process: PROCESS_ID,
+        tags: finalTags,
+        signer: signer,
+        data: data,
+    });
+
+    return res; // 返回 msgId
