@@ -329,16 +329,40 @@
             }
 
             async openNovel(id) {
-                this.currentNovel = this.novels.find(n => n.Id === id);
-                if (!this.currentNovel) return;
-
-                document.getElementById('detail-title').textContent = this.currentNovel.Title;
-                document.getElementById('detail-desc').textContent = this.currentNovel.Description;
-                document.getElementById('detail-author').textContent = "作者: " + this.currentNovel.Author;
+                // Bug fix: Force refresh from AO process to get latest chain state, ensuring anti-censorship integrity
+                const detailEl = document.getElementById('chapter-list');
+                detailEl.innerHTML = '<div class="text-center py-4"><div class="loader mx-auto"></div><p class="text-gray-500 mt-2">从 AO 链上验证最新章节（抗审查保障）...</p></div>';
                 
-                this.checkAuthorControls();
-                this.renderChapters();
-                this.navigate('detail');
+                try {
+                    const res = await dryrun({
+                        process: PROCESS_ID,
+                        tags: [{ name: "Action", value: "Get-Novel" }, { name: "NovelId", value: id }]
+                    });
+                    this.currentNovel = JSON.parse(res.Messages[0].Data);
+                    
+                    if (!this.currentNovel) {
+                        this.showToast("小说不存在");
+                        this.navigate('home');
+                        return;
+                    }
+                    
+                    // Update cache to reflect latest for list rendering consistency
+                    const cacheIndex = this.novels.findIndex(n => n.Id === id);
+                    if (cacheIndex !== -1) {
+                        this.novels[cacheIndex] = this.currentNovel;
+                        if (!this.isMyNovelsMode) this.renderNovels(this.novels);
+                    }
+                    
+                    document.getElementById('detail-title').textContent = this.currentNovel.Title;
+                    document.getElementById('detail-desc').textContent = this.currentNovel.Description;
+                    document.getElementById('detail-author').textContent = "作者: " + this.currentNovel.Author;
+                    
+                    this.checkAuthorControls();
+                    this.renderChapters();
+                    this.navigate('detail');
+                } catch (e) {
+                    detailEl.innerHTML = '<div class="text-red-500 text-center py-4">加载失败: ' + e.message + '</div>';
+                }
             }
 
             checkAuthorControls() {
